@@ -610,10 +610,22 @@ body {
 /* ============================================
    Cash Flow by Date Card
    ============================================ */
-.cashflow-date-card .tx-table th:nth-child(n+2),
-.cashflow-date-card .tx-table td:nth-child(n+2) {
-  width: 90px;
-  min-width: 90px;
+.cashflow-table-wrapper {
+  overflow-x: hidden;
+}
+
+.cashflow-table {
+  table-layout: fixed;
+}
+
+.cashflow-table th:nth-child(1),
+.cashflow-table td:nth-child(1) {
+  width: 18%;
+}
+
+.cashflow-table th:nth-child(n+2),
+.cashflow-table td:nth-child(n+2) {
+  width: 27.3%;
 }
 
 .cashflow-card-header {
