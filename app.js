@@ -394,28 +394,47 @@ function updateTable(txs) {
   const tbody = document.getElementById('txTableBody');
   txs = txs.filter(tx => !tx.recurring);
 
-  if (!txs.length) {
+  const period = document.getElementById('periodFilter').value;
+  const range  = getPeriodRange(period);
+  const placeholders = getCreditCardPlaceholders(range);
+
+  const allRows = [
+    ...txs.map(tx => ({ ...tx, isPlaceholder: false })),
+    ...placeholders,
+  ].sort((a, b) => a.date.localeCompare(b.date));
+
+  if (!allRows.length) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No transactions found.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = txs.map(tx => `
+  tbody.innerHTML = allRows.map(row => {
+    if (row.isPlaceholder) {
+      return `
+    <tr class="cc-placeholder-row">
+      <td class="tx-date">${fmtDate(row.date)}</td>
+      <td><span class="tx-desc">${escHtml(row.cardName)}</span><span class="cc-placeholder-label">Credit Card</span></td>
+      <td class="cc-placeholder-amount">pending</td>
+      <td></td>
+    </tr>`;
+    }
+    return `
     <tr>
-      <td class="tx-date">${fmtDate(tx.date)}</td>
+      <td class="tx-date">${fmtDate(row.date)}</td>
       <td>
-        <span class="tx-desc">${escHtml(tx.description)}</span>
-        ${tx.recurring ? `<span class="badge badge-recurring" title="${escHtml(tx.recurring)}">↻</span>` : ''}
-        ${tx.note ? `<span class="tx-note">${escHtml(tx.note)}</span>` : ''}
+        <span class="tx-desc">${escHtml(row.description)}</span>
+        ${row.recurring ? `<span class="badge badge-recurring" title="${escHtml(row.recurring)}">↻</span>` : ''}
+        ${row.note ? `<span class="tx-note">${escHtml(row.note)}</span>` : ''}
       </td>
-      <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}</td>
+      <td class="tx-amount ${row.type}">${row.type === 'income' ? '+' : '-'}${fmt(row.amount)}</td>
       <td class="tx-actions">
-        <button class="icon-btn" title="Edit" onclick="openEdit('${tx.id}')">
+        <button class="icon-btn" title="Edit" onclick="openEdit('${row.id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
         </button>
-        <button class="icon-btn delete" title="Delete" onclick="openDelete('${tx.id}')">
+        <button class="icon-btn delete" title="Delete" onclick="openDelete('${row.id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
@@ -424,7 +443,8 @@ function updateTable(txs) {
           </svg>
         </button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function escHtml(str) {
