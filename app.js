@@ -166,6 +166,58 @@ function getFilteredTransactions() {
 function updateSummary() {}
 
 /* ============================================
+   Cash Flow by Date
+   ============================================ */
+
+function updateCashFlowTable() {
+  const period = document.getElementById('periodFilter').value;
+  const range  = getPeriodRange(period);
+  const tbody  = document.getElementById('cashflowDateBody');
+
+  // Walk all transactions in chronological order to compute running balance
+  const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+
+  let balance = 0;
+  const dateMap = new Map();
+
+  for (const tx of sorted) {
+    if (tx.type === 'income') balance += tx.amount;
+    else                      balance -= tx.amount;
+
+    if (!dateMap.has(tx.date)) {
+      dateMap.set(tx.date, { inflow: 0, outflow: 0, balance: 0 });
+    }
+    const entry = dateMap.get(tx.date);
+    if (tx.type === 'income') entry.inflow  += tx.amount;
+    else                      entry.outflow += tx.amount;
+    entry.balance = balance;
+  }
+
+  // Filter to only dates within the selected period
+  const rows = [];
+  for (const [date, entry] of dateMap) {
+    if (range) {
+      const d = new Date(date + 'T00:00:00');
+      if (d < range.start || d > range.end) continue;
+    }
+    rows.push({ date, ...entry });
+  }
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No transactions found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="tx-date">${fmtDate(r.date)}</td>
+      <td class="text-right tx-amount income">${r.inflow  ? '+' + fmt(r.inflow)  : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td class="text-right tx-amount expense">${r.outflow ? '-' + fmt(r.outflow) : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td class="text-right tx-amount ${r.balance >= 0 ? 'income' : 'expense'}">${fmt(r.balance)}</td>
+    </tr>`).join('');
+}
+
+/* ============================================
    Category Breakdown
    ============================================ */
 
@@ -393,6 +445,7 @@ function render() {
   const txs = getFilteredTransactions();
   updateSummary(filterByPeriod(transactions, document.getElementById('periodFilter').value));
   updateTable(txs);
+  updateCashFlowTable();
   updateCategoryBreakdown(filterByPeriod(transactions, document.getElementById('periodFilter').value));
   updateChart(transactions);
   populateCategoryFilter();
