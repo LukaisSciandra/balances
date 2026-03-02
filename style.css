@@ -348,7 +348,7 @@ body {
 
 .badge-income    { background: var(--income-bg);  color: var(--income); }
 .badge-expense   { background: var(--expense-bg); color: var(--expense); }
-.badge-recurring { background: rgba(99,102,241,0.12); color: #818cf8; font-size: 11px; padding: 1px 7px; }
+.badge-recurring { background: rgba(99,102,241,0.12); color: #818cf8; font-size: 11px; padding: 1px 5px; vertical-align: middle; margin-left: 5px; }
 
 .tx-amount {
   font-weight: 600;

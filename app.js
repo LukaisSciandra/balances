@@ -304,7 +304,7 @@ function updateTable(txs) {
       <td class="tx-date">${fmtDate(tx.date)}</td>
       <td>
         <span class="tx-desc">${escHtml(tx.description)}</span>
-        ${tx.recurring ? `<span class="badge badge-recurring">↻ ${escHtml(tx.recurring)}</span>` : ''}
+        ${tx.recurring ? `<span class="badge badge-recurring" title="${escHtml(tx.recurring)}">↻</span>` : ''}
         ${tx.note ? `<span class="tx-note">${escHtml(tx.note)}</span>` : ''}
       </td>
       <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}</td>
