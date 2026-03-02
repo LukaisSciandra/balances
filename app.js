@@ -383,7 +383,7 @@ function updateTable(txs) {
   const tbody = document.getElementById('txTableBody');
 
   if (!txs.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No transactions found.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No transactions found.</td></tr>';
     return;
   }
 
@@ -394,8 +394,6 @@ function updateTable(txs) {
         <span class="tx-desc">${escHtml(tx.description)}</span>
         ${tx.note ? `<span class="tx-note">${escHtml(tx.note)}</span>` : ''}
       </td>
-      <td><span class="badge badge-category">${escHtml(tx.category)}</span></td>
-      <td><span class="badge badge-${tx.type}">${tx.type}</span></td>
       <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}</td>
       <td class="tx-actions">
         <button class="icon-btn" title="Edit" onclick="openEdit('${tx.id}')">
