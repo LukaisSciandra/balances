@@ -171,13 +171,11 @@ function filterByPeriod(txs, period) {
 function getFilteredTransactions() {
   const period   = document.getElementById('periodFilter').value;
   const type     = document.getElementById('typeFilter').value;
-  const category = document.getElementById('categoryFilter').value;
   const search   = document.getElementById('searchInput').value.trim().toLowerCase();
 
   let txs = filterByPeriod(transactions, period);
 
-  if (type !== 'all')     txs = txs.filter(tx => tx.type === type);
-  if (category !== 'all') txs = txs.filter(tx => tx.category === category);
+  if (type !== 'all') txs = txs.filter(tx => tx.type === type);
   if (search)             txs = txs.filter(tx =>
     tx.description.toLowerCase().includes(search) ||
     tx.category.toLowerCase().includes(search) ||
@@ -342,13 +340,6 @@ function escHtml(str) {
    Category Filter Population
    ============================================ */
 
-function populateCategoryFilter() {
-  const sel = document.getElementById('categoryFilter');
-  const current = sel.value;
-  const allCats = [...new Set(transactions.map(t => t.category))].sort();
-  sel.innerHTML = '<option value="all">All Categories</option>' +
-    allCats.map(c => `<option value="${escHtml(c)}"${c === current ? ' selected' : ''}>${escHtml(c)}</option>`).join('');
-}
 
 /* ============================================
    Render All
@@ -366,7 +357,6 @@ function render() {
   updateTable(getFilteredTransactions());
   updateCashFlowTable(expanded);
   updateCategoryBreakdown(periodTxs);
-  populateCategoryFilter();
 }
 
 /* ============================================
@@ -547,7 +537,7 @@ document.getElementById('currentBalanceInput').addEventListener('keydown', e => 
 });
 
 // Filters
-['periodFilter', 'typeFilter', 'categoryFilter', 'searchInput'].forEach(id => {
+['periodFilter', 'typeFilter', 'searchInput'].forEach(id => {
   document.getElementById(id).addEventListener('input', render);
 });
 
