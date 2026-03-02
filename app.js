@@ -352,15 +352,15 @@ function updateCashFlowTable(expanded) {
 
 function updateCategoryBreakdown(txs) {
   const container = document.getElementById('categoryBreakdown');
-  const expenses  = txs.filter(t => t.type === 'expense');
+  const relevant = txs.filter(t => t.type === 'expense' || (t.type === 'income' && t.category === 'Rent'));
 
-  if (!expenses.length) {
+  if (!relevant.length) {
     container.innerHTML = '<p class="empty-msg">No expense data.</p>';
     return;
   }
 
   const totals = {};
-  expenses.forEach(tx => {
+  relevant.forEach(tx => {
     totals[tx.category] = (totals[tx.category] || 0) + tx.amount;
   });
 
