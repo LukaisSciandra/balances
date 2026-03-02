@@ -5,28 +5,8 @@
    ============================================ */
 
 const CATEGORIES = {
-  income: [
-    'Salary',
-    'Freelance',
-    'Business',
-    'Investment',
-    'Gift',
-    'Refund',
-    'Other Income',
-  ],
-  expense: [
-    'Housing',
-    'Food & Dining',
-    'Transport',
-    'Healthcare',
-    'Shopping',
-    'Entertainment',
-    'Education',
-    'Utilities',
-    'Subscriptions',
-    'Travel',
-    'Other Expense',
-  ],
+  income:  ['Rent', 'Salary', 'Venmo', 'Other'],
+  expense: ['Rent', 'Credit Card', 'Venmo', 'Other'],
 };
 
 const CATEGORY_COLORS = [
