@@ -727,7 +727,6 @@ function importData(file) {
       saveTransactions();
       if (typeof data.balance === 'number') saveBalance(data.balance);
       render();
-      document.getElementById('syncBanner').hidden = true;
     } catch {
       alert('Import failed: the selected file is not a valid CashFlow backup.');
     }
@@ -762,19 +761,5 @@ CREDIT_CARDS.forEach(c => {
   cardSel.appendChild(opt);
 });
 
-// Show sync banner automatically when running as an installed PWA (standalone mode).
-// On iOS, the Home Screen app has a completely separate localStorage from Safari,
-// so users must import a backup exported from their browser.
-if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) {
-  document.getElementById('syncBanner').hidden = false;
-}
-
-document.getElementById('syncBannerDismiss').addEventListener('click', () => {
-  document.getElementById('syncBanner').hidden = true;
-});
-
-document.getElementById('syncBannerImport').addEventListener('click', () => {
-  document.getElementById('importInput').click();
-});
 
 render();
