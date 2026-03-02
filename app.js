@@ -43,7 +43,7 @@ const BALANCE_KEY  = 'cashflow_opening_balance';
    ============================================ */
 
 let transactions   = loadTransactions();
-let openingBalance = loadBalance();
+let currentBalance = loadBalance();
 let editingId      = null;
 let pendingDeleteId = null;
 
@@ -70,7 +70,7 @@ function loadBalance() {
 }
 
 function saveBalance(amount) {
-  openingBalance = amount;
+  currentBalance = amount;
   localStorage.setItem(BALANCE_KEY, String(amount));
 }
 
@@ -187,14 +187,14 @@ function updateCashFlowTable() {
   const tbody  = document.getElementById('cashflowDateBody');
 
   // Reflect current opening balance in the header display
-  const displayEl = document.getElementById('openingBalanceDisplay');
-  displayEl.textContent = fmt(openingBalance);
-  displayEl.className   = 'opening-balance-value' + (openingBalance < 0 ? ' expense' : '');
+  const displayEl = document.getElementById('currentBalanceDisplay');
+  displayEl.textContent = fmt(currentBalance);
+  displayEl.className   = 'current-balance-value' + (currentBalance < 0 ? ' expense' : '');
 
   // Walk all transactions in chronological order to compute running balance
   const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
 
-  let balance = openingBalance;
+  let balance = currentBalance;
   const dateMap = new Map();
 
   for (const tx of sorted) {
@@ -534,28 +534,28 @@ window.openDelete = function(id) {
 };
 
 /* ============================================
-   Opening Balance Editing
+   Current Balance Editing
    ============================================ */
 
 function openEditBalance() {
-  document.getElementById('openingBalanceDisplay').hidden = true;
+  document.getElementById('currentBalanceDisplay').hidden = true;
   document.getElementById('editBalanceBtn').hidden        = true;
-  document.getElementById('openingBalanceForm').hidden    = false;
-  document.getElementById('openingBalanceInput').value   = openingBalance;
-  document.getElementById('openingBalanceInput').select();
+  document.getElementById('currentBalanceForm').hidden    = false;
+  document.getElementById('currentBalanceInput').value   = currentBalance;
+  document.getElementById('currentBalanceInput').select();
 }
 
 function confirmEditBalance() {
-  const val = parseFloat(document.getElementById('openingBalanceInput').value);
+  const val = parseFloat(document.getElementById('currentBalanceInput').value);
   if (!isNaN(val)) saveBalance(val);
   closeEditBalance();
   render();
 }
 
 function closeEditBalance() {
-  document.getElementById('openingBalanceDisplay').hidden = false;
+  document.getElementById('currentBalanceDisplay').hidden = false;
   document.getElementById('editBalanceBtn').hidden        = false;
-  document.getElementById('openingBalanceForm').hidden    = true;
+  document.getElementById('currentBalanceForm').hidden    = true;
 }
 
 /* ============================================
@@ -637,7 +637,7 @@ document.getElementById('deleteOverlay').addEventListener('click', e => {
 document.getElementById('editBalanceBtn').addEventListener('click', openEditBalance);
 document.getElementById('saveBalanceBtn').addEventListener('click', confirmEditBalance);
 document.getElementById('cancelBalanceBtn').addEventListener('click', closeEditBalance);
-document.getElementById('openingBalanceInput').addEventListener('keydown', e => {
+document.getElementById('currentBalanceInput').addEventListener('keydown', e => {
   if (e.key === 'Enter')  confirmEditBalance();
   if (e.key === 'Escape') closeEditBalance();
 });
