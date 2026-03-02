@@ -608,6 +608,27 @@ body {
 }
 
 /* ============================================
+   Cash Flow — Credit Card Placeholder Rows
+   ============================================ */
+.cc-placeholder-row td {
+  opacity: 0.55;
+}
+
+.cc-placeholder-label {
+  display: block;
+  font-size: 11px;
+  color: var(--primary);
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+.cc-placeholder-amount {
+  font-size: 11px;
+  color: var(--primary);
+  font-style: italic;
+}
+
+/* ============================================
    Cash Flow — Current Row
    ============================================ */
 .current-row td {

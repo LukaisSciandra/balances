@@ -218,6 +218,30 @@ function updateSummary() {}
    Cash Flow by Date
    ============================================ */
 
+function getCreditCardPlaceholders(range) {
+  if (!range) return [];
+  const result = [];
+  for (const card of CREDIT_CARDS) {
+    let d = new Date(range.start.getFullYear(), range.start.getMonth(), card.day);
+    if (d < range.start) d = new Date(range.start.getFullYear(), range.start.getMonth() + 1, card.day);
+    while (d <= range.end) {
+      const y  = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, '0');
+      const da = String(d.getDate()).padStart(2, '0');
+      const dueDate = `${y}-${mo}-${da}`;
+      const paid = transactions.some(tx =>
+        tx.type === 'expense' && tx.category === 'Credit Card' &&
+        tx.date === dueDate && (!tx.card || tx.card === card.name)
+      );
+      if (!paid) {
+        result.push({ date: dueDate, cardName: card.name, isPlaceholder: true });
+      }
+      d = new Date(d.getFullYear(), d.getMonth() + 1, card.day);
+    }
+  }
+  return result;
+}
+
 function updateCashFlowTable(expanded) {
   const period = document.getElementById('periodFilter').value;
   const range  = getPeriodRange(period);
@@ -257,6 +281,11 @@ function updateCashFlowTable(expanded) {
     rows.push({ date, ...entry });
   }
 
+  // Inject credit card placeholders for unpaid due dates within the period
+  for (const ph of getCreditCardPlaceholders(range)) {
+    rows.push(ph);
+  }
+
   // Always inject a "Current" row for today if today falls within the period
   const todayStr = today();
   const todayDate = new Date(todayStr + 'T00:00:00');
@@ -270,11 +299,15 @@ function updateCashFlowTable(expanded) {
     return;
   }
 
-  // Sort by date; Current row sorts before any same-date transaction rows
+  // Sort by date; Current first, placeholders last among same-date rows
   rows.sort((a, b) => {
     const cmp = a.date.localeCompare(b.date);
     if (cmp !== 0) return cmp;
-    return a.isCurrent ? -1 : 1;
+    if (a.isCurrent)     return -1;
+    if (b.isCurrent)     return  1;
+    if (a.isPlaceholder) return  1;
+    if (b.isPlaceholder) return -1;
+    return 0;
   });
 
   tbody.innerHTML = rows.map(r => {
@@ -285,6 +318,15 @@ function updateCashFlowTable(expanded) {
           <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
           <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
           <td class="text-right tx-amount ${r.balance >= 0 ? 'income' : 'expense'}">${fmt(r.balance)}</td>
+        </tr>`;
+    }
+    if (r.isPlaceholder) {
+      return `
+        <tr class="cc-placeholder-row">
+          <td class="tx-date">${fmtDate(r.date)}<span class="cc-placeholder-label">${escHtml(r.cardName)}</span></td>
+          <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
+          <td class="text-right cc-placeholder-amount">pending</td>
+          <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
         </tr>`;
     }
     return `
@@ -552,6 +594,7 @@ document.getElementById('txForm').addEventListener('submit', e => {
   e.preventDefault();
 
   const recurring = document.getElementById('txRecurring').value || null;
+  const card      = document.getElementById('txCard').value || null;
   const tx = {
     id:          editingId || uid(),
     type:        document.getElementById('txType').value,
@@ -561,6 +604,7 @@ document.getElementById('txForm').addEventListener('submit', e => {
     date:        document.getElementById('txDate').value,
     note:        document.getElementById('txNote').value.trim(),
     recurring,
+    card,
   };
 
   if (!tx.description || isNaN(tx.amount) || tx.amount <= 0) return;
