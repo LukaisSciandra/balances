@@ -288,125 +288,6 @@ function updateCategoryBreakdown(txs) {
 }
 
 /* ============================================
-   Chart (Canvas)
-   ============================================ */
-
-function updateChart(txs) {
-  const canvas  = document.getElementById('flowChart');
-  const ctx     = canvas.getContext('2d');
-  const dpr     = window.devicePixelRatio || 1;
-  const rect    = canvas.parentElement.getBoundingClientRect();
-  const W       = rect.width;
-  const H       = rect.height || 220;
-
-  canvas.width  = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
-  ctx.scale(dpr, dpr);
-
-  ctx.clearRect(0, 0, W, H);
-
-  // Build monthly buckets for the past 6 months
-  const buckets = buildMonthlyBuckets(txs, 6);
-  if (!buckets.length) return;
-
-  const padL = 56, padR = 16, padT = 16, padB = 36;
-  const chartW = W - padL - padR;
-  const chartH = H - padT - padB;
-
-  const allAmounts = buckets.flatMap(b => [b.income, b.expense]);
-  const maxVal     = Math.max(...allAmounts, 1);
-  const barGroupW  = chartW / buckets.length;
-  const barW       = Math.min(barGroupW * 0.3, 24);
-
-  // Y axis grid
-  const gridLines = 4;
-  ctx.strokeStyle = 'rgba(46,49,72,0.8)';
-  ctx.lineWidth   = 1;
-  ctx.fillStyle   = 'rgba(139,143,168,0.8)';
-  ctx.font        = `11px -apple-system, sans-serif`;
-  ctx.textAlign   = 'right';
-
-  for (let i = 0; i <= gridLines; i++) {
-    const val = (maxVal * i) / gridLines;
-    const y   = padT + chartH - (val / maxVal) * chartH;
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(W - padR, y);
-    ctx.stroke();
-    ctx.fillText(val >= 1000 ? `$${(val / 1000).toFixed(1)}k` : `$${Math.round(val)}`, padL - 6, y + 4);
-  }
-
-  // Bars
-  buckets.forEach((b, i) => {
-    const cx = padL + barGroupW * i + barGroupW / 2;
-
-    // Income bar
-    const ih = (b.income / maxVal) * chartH;
-    ctx.fillStyle = 'rgba(34,197,94,0.85)';
-    ctx.beginPath();
-    ctx.roundRect
-      ? ctx.roundRect(cx - barW - 2, padT + chartH - ih, barW, ih, [3, 3, 0, 0])
-      : ctx.rect(cx - barW - 2, padT + chartH - ih, barW, ih);
-    ctx.fill();
-
-    // Expense bar
-    const eh = (b.expense / maxVal) * chartH;
-    ctx.fillStyle = 'rgba(244,63,94,0.85)';
-    ctx.beginPath();
-    ctx.roundRect
-      ? ctx.roundRect(cx + 2, padT + chartH - eh, barW, eh, [3, 3, 0, 0])
-      : ctx.rect(cx + 2, padT + chartH - eh, barW, eh);
-    ctx.fill();
-
-    // Month label
-    ctx.fillStyle = 'rgba(139,143,168,0.9)';
-    ctx.textAlign = 'center';
-    ctx.fillText(b.label, cx, H - padB + 16);
-  });
-
-  // Legend
-  const legendY = H - padB + 30;
-  ctx.font      = '11px -apple-system, sans-serif';
-  ctx.textAlign = 'left';
-
-  ctx.fillStyle = 'rgba(34,197,94,0.85)';
-  ctx.fillRect(padL, legendY - 9, 10, 10);
-  ctx.fillStyle = 'rgba(139,143,168,0.9)';
-  ctx.fillText('Income', padL + 14, legendY);
-
-  ctx.fillStyle = 'rgba(244,63,94,0.85)';
-  ctx.fillRect(padL + 70, legendY - 9, 10, 10);
-  ctx.fillStyle = 'rgba(139,143,168,0.9)';
-  ctx.fillText('Expenses', padL + 84, legendY);
-}
-
-function buildMonthlyBuckets(txs, count) {
-  const buckets = [];
-  const now     = new Date();
-
-  for (let i = count - 1; i >= 0; i--) {
-    const d     = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const year  = d.getFullYear();
-    const month = d.getMonth();
-    const label = d.toLocaleDateString('en-US', { month: 'short' });
-
-    const monthTxs = txs.filter(tx => {
-      const td = new Date(tx.date + 'T00:00:00');
-      return td.getFullYear() === year && td.getMonth() === month;
-    });
-
-    buckets.push({
-      label,
-      income:  monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
-      expense: monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
-    });
-  }
-  return buckets;
-}
-
-/* ============================================
    Transaction Table
    ============================================ */
 
@@ -482,7 +363,6 @@ function render() {
   updateTable(getFilteredTransactions());
   updateCashFlowTable(expanded);
   updateCategoryBreakdown(periodTxs);
-  updateChart(expandRecurring(transactions, new Date()));
   populateCategoryFilter();
 }
 
@@ -677,12 +557,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// Redraw chart on resize
-let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => updateChart(transactions), 150);
-});
 
 /* ============================================
    Init

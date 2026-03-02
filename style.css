@@ -173,17 +173,12 @@ body {
    ============================================ */
 .charts-row {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 
-.chart-card, .breakdown-card {
+.breakdown-card {
   overflow: hidden;
-}
-
-.chart-container {
-  position: relative;
-  height: 220px;
 }
 
 /* ============================================
@@ -683,9 +678,6 @@ body {
 @media (max-width: 900px) {
   .summary {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .charts-row {
-    grid-template-columns: 1fr;
   }
   .breakdown-card .category-list {
     max-height: none;
