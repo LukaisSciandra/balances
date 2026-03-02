@@ -9,6 +9,13 @@ const CATEGORIES = {
   expense: ['Rent', 'Credit Card', 'Venmo', 'Investment', 'Other'],
 };
 
+const CREDIT_CARDS = [
+  { name: 'Discover',  day: 1  },
+  { name: 'Amex',      day: 9  },
+  { name: 'Robinhood', day: 28 },
+  { name: 'Amazon',    day: 5  },
+];
+
 const CATEGORY_COLORS = [
   '#6366f1', '#22c55e', '#f59e0b', '#f43f5e', '#06b6d4',
   '#a78bfa', '#34d399', '#fb923c', '#e879f9', '#60a5fa',
@@ -100,6 +107,16 @@ function today() {
 
 function dateStr(d) {
   return d.toISOString().slice(0, 10);
+}
+
+function nextDueDate(day) {
+  const now = new Date();
+  let d = new Date(now.getFullYear(), now.getMonth(), day);
+  if (d <= now) d = new Date(now.getFullYear(), now.getMonth() + 1, day);
+  const y  = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const da = String(d.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${da}`;
 }
 
 function nextDate(d, freq) {
@@ -460,10 +477,17 @@ function setType(type) {
   updateCategoryOptions(type);
 }
 
+function updateCardPickerVisibility() {
+  const isCC = document.getElementById('txCategory').value === 'Credit Card';
+  document.getElementById('cardPickerRow').hidden = !isCC;
+  if (!isCC) document.getElementById('txCard').value = '';
+}
+
 function updateCategoryOptions(type) {
   const sel  = document.getElementById('txCategory');
   const cats = CATEGORIES[type] || [];
   sel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  updateCardPickerVisibility();
 }
 
 window.openEdit = function(id) {
@@ -485,6 +509,7 @@ window.openEdit = function(id) {
   const catSel = document.getElementById('txCategory');
   const opt = [...catSel.options].find(o => o.value === tx.category);
   if (opt) catSel.value = tx.category;
+  updateCardPickerVisibility();
 
   openModal();
 };
@@ -605,6 +630,13 @@ document.getElementById('currentBalanceInput').addEventListener('keydown', e => 
   if (e.key === 'Escape') closeEditBalance();
 });
 
+// Credit card picker
+document.getElementById('txCategory').addEventListener('change', updateCardPickerVisibility);
+document.getElementById('txCard').addEventListener('change', () => {
+  const card = CREDIT_CARDS.find(c => c.name === document.getElementById('txCard').value);
+  if (card) document.getElementById('txDate').value = nextDueDate(card.day);
+});
+
 // Filters
 ['periodFilter', 'typeFilter', 'searchInput'].forEach(id => {
   document.getElementById(id).addEventListener('input', render);
@@ -669,6 +701,15 @@ document.getElementById('importBtn').addEventListener('click', () => {
    ============================================ */
 
 document.getElementById('txDate').value = today();
+
+// Populate credit card picker
+const cardSel = document.getElementById('txCard');
+CREDIT_CARDS.forEach(c => {
+  const opt = document.createElement('option');
+  opt.value = c.name;
+  opt.textContent = `${c.name} — due ${c.day}`;
+  cardSel.appendChild(opt);
+});
 
 // Show sync banner automatically when running as an installed PWA (standalone mode).
 // On iOS, the Home Screen app has a completely separate localStorage from Safari,
