@@ -324,7 +324,7 @@ function updateCashFlowTable(expanded) {
           <td class="tx-date current-row-label">Current</td>
           <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
           <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
-          <td class="text-right tx-amount ${r.balance >= 0 ? 'income' : 'expense'}">${fmt(r.balance)}</td>
+          <td class="text-right tx-amount ${r.balance >= 0 ? '' : 'expense'}">${fmt(r.balance)}</td>
         </tr>`;
     }
     if (r.isPlaceholder) {
@@ -341,7 +341,7 @@ function updateCashFlowTable(expanded) {
         <td class="tx-date">${fmtDate(r.date)}</td>
         <td class="text-right tx-amount income">${r.inflow  ? '+' + fmt(r.inflow)  : '<span style="color:var(--text-muted)">—</span>'}</td>
         <td class="text-right tx-amount expense">${r.outflow ? '-' + fmt(r.outflow) : '<span style="color:var(--text-muted)">—</span>'}</td>
-        <td class="text-right tx-amount ${r.balance >= 0 ? 'income' : 'expense'}">${fmt(r.balance)}</td>
+        <td class="text-right tx-amount ${r.balance >= 0 ? '' : 'expense'}">${fmt(r.balance)}</td>
       </tr>`;
   }).join('');
 }
