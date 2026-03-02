@@ -320,6 +320,8 @@ body {
   color: var(--text-muted);
   font-size: 13px;
   white-space: nowrap;
+  width: 48px;
+  min-width: 48px;
 }
 
 .tx-desc {
