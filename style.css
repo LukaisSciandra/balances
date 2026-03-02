@@ -608,6 +608,18 @@ body {
 }
 
 /* ============================================
+   Cash Flow — Current Row
+   ============================================ */
+.current-row td {
+  border-bottom: 2px solid var(--border);
+}
+
+.current-row-label {
+  color: var(--text) !important;
+  font-weight: 600;
+}
+
+/* ============================================
    Cash Flow by Date Card
    ============================================ */
 .cashflow-table-wrapper {

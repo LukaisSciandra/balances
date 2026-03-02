@@ -240,18 +240,44 @@ function updateCashFlowTable(expanded) {
     rows.push({ date, ...entry });
   }
 
+  // Always inject a "Current" row for today if today falls within the period
+  const todayStr = today();
+  const todayDate = new Date(todayStr + 'T00:00:00');
+  const todayInRange = !range || (todayDate >= range.start && todayDate <= range.end);
+  if (todayInRange) {
+    rows.push({ date: todayStr, inflow: 0, outflow: 0, balance: currentBalance, isCurrent: true });
+  }
+
   if (!rows.length) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No transactions found.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td class="tx-date">${fmtDate(r.date)}</td>
-      <td class="text-right tx-amount income">${r.inflow  ? '+' + fmt(r.inflow)  : '<span style="color:var(--text-muted)">—</span>'}</td>
-      <td class="text-right tx-amount expense">${r.outflow ? '-' + fmt(r.outflow) : '<span style="color:var(--text-muted)">—</span>'}</td>
-      <td class="text-right tx-amount ${r.balance >= 0 ? 'income' : 'expense'}">${fmt(r.balance)}</td>
-    </tr>`).join('');
+  // Sort by date; Current row sorts before any same-date transaction rows
+  rows.sort((a, b) => {
+    const cmp = a.date.localeCompare(b.date);
+    if (cmp !== 0) return cmp;
+    return a.isCurrent ? -1 : 1;
+  });
+
+  tbody.innerHTML = rows.map(r => {
+    if (r.isCurrent) {
+      return `
+        <tr class="current-row">
+          <td class="tx-date current-row-label">Current</td>
+          <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
+          <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
+          <td class="text-right tx-amount ${r.balance >= 0 ? 'income' : 'expense'}">${fmt(r.balance)}</td>
+        </tr>`;
+    }
+    return `
+      <tr>
+        <td class="tx-date">${fmtDate(r.date)}</td>
+        <td class="text-right tx-amount income">${r.inflow  ? '+' + fmt(r.inflow)  : '<span style="color:var(--text-muted)">—</span>'}</td>
+        <td class="text-right tx-amount expense">${r.outflow ? '-' + fmt(r.outflow) : '<span style="color:var(--text-muted)">—</span>'}</td>
+        <td class="text-right tx-amount ${r.balance >= 0 ? 'income' : 'expense'}">${fmt(r.balance)}</td>
+      </tr>`;
+  }).join('');
 }
 
 /* ============================================
