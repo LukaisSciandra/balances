@@ -34,14 +34,17 @@ let pendingDeleteId = null;
 function loadTransactions() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : getDefaultTransactions();
-  } catch {
-    return [];
-  }
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  const defaults = getDefaultTransactions();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults)); } catch {}
+  return defaults;
 }
 
 function saveTransactions() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+  } catch {}
 }
 
 function loadBalance() {
