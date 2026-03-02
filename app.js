@@ -36,13 +36,15 @@ const CATEGORY_COLORS = [
 ];
 
 const STORAGE_KEY = 'cashflow_transactions';
+const BALANCE_KEY  = 'cashflow_opening_balance';
 
 /* ============================================
    State
    ============================================ */
 
-let transactions = loadTransactions();
-let editingId = null;
+let transactions   = loadTransactions();
+let openingBalance = loadBalance();
+let editingId      = null;
 let pendingDeleteId = null;
 
 /* ============================================
@@ -60,6 +62,16 @@ function loadTransactions() {
 
 function saveTransactions() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+}
+
+function loadBalance() {
+  const raw = localStorage.getItem(BALANCE_KEY);
+  return raw !== null ? parseFloat(raw) : 0;
+}
+
+function saveBalance(amount) {
+  openingBalance = amount;
+  localStorage.setItem(BALANCE_KEY, String(amount));
 }
 
 function getDefaultTransactions() {
@@ -174,10 +186,15 @@ function updateCashFlowTable() {
   const range  = getPeriodRange(period);
   const tbody  = document.getElementById('cashflowDateBody');
 
+  // Reflect current opening balance in the header display
+  const displayEl = document.getElementById('openingBalanceDisplay');
+  displayEl.textContent = fmt(openingBalance);
+  displayEl.className   = 'opening-balance-value' + (openingBalance < 0 ? ' expense' : '');
+
   // Walk all transactions in chronological order to compute running balance
   const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
 
-  let balance = 0;
+  let balance = openingBalance;
   const dateMap = new Map();
 
   for (const tx of sorted) {
@@ -517,6 +534,31 @@ window.openDelete = function(id) {
 };
 
 /* ============================================
+   Opening Balance Editing
+   ============================================ */
+
+function openEditBalance() {
+  document.getElementById('openingBalanceDisplay').hidden = true;
+  document.getElementById('editBalanceBtn').hidden        = true;
+  document.getElementById('openingBalanceForm').hidden    = false;
+  document.getElementById('openingBalanceInput').value   = openingBalance;
+  document.getElementById('openingBalanceInput').select();
+}
+
+function confirmEditBalance() {
+  const val = parseFloat(document.getElementById('openingBalanceInput').value);
+  if (!isNaN(val)) saveBalance(val);
+  closeEditBalance();
+  render();
+}
+
+function closeEditBalance() {
+  document.getElementById('openingBalanceDisplay').hidden = false;
+  document.getElementById('editBalanceBtn').hidden        = false;
+  document.getElementById('openingBalanceForm').hidden    = true;
+}
+
+/* ============================================
    Form Submit
    ============================================ */
 
@@ -589,6 +631,15 @@ document.getElementById('deleteOverlay').addEventListener('click', e => {
     pendingDeleteId = null;
     document.getElementById('deleteOverlay').classList.remove('open');
   }
+});
+
+// Opening balance editing
+document.getElementById('editBalanceBtn').addEventListener('click', openEditBalance);
+document.getElementById('saveBalanceBtn').addEventListener('click', confirmEditBalance);
+document.getElementById('cancelBalanceBtn').addEventListener('click', closeEditBalance);
+document.getElementById('openingBalanceInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter')  confirmEditBalance();
+  if (e.key === 'Escape') closeEditBalance();
 });
 
 // Filters
