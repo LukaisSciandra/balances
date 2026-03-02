@@ -614,7 +614,7 @@ document.getElementById('txForm').addEventListener('submit', e => {
     card,
   };
 
-  if (!tx.description || isNaN(tx.amount) || tx.amount <= 0) return;
+  if (!tx.description || isNaN(tx.amount)) return;
 
   if (editingId) {
     const idx = transactions.findIndex(t => t.id === editingId);
