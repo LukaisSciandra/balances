@@ -562,8 +562,68 @@ document.addEventListener('keydown', e => {
 
 
 /* ============================================
+   Export / Import
+   ============================================ */
+
+function exportData() {
+  const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), balance: currentBalance, transactions }, null, 2);
+  const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cashflow-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data.transactions)) throw new Error();
+      transactions = data.transactions;
+      saveTransactions();
+      if (typeof data.balance === 'number') saveBalance(data.balance);
+      render();
+      document.getElementById('syncBanner').hidden = true;
+    } catch {
+      alert('Import failed: the selected file is not a valid CashFlow backup.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportData);
+
+document.getElementById('importInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) importData(file);
+  e.target.value = '';
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importInput').click();
+});
+
+/* ============================================
    Init
    ============================================ */
 
 document.getElementById('txDate').value = today();
+
+// Show sync banner automatically when running as an installed PWA (standalone mode).
+// On iOS, the Home Screen app has a completely separate localStorage from Safari,
+// so users must import a backup exported from their browser.
+if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) {
+  document.getElementById('syncBanner').hidden = false;
+}
+
+document.getElementById('syncBannerDismiss').addEventListener('click', () => {
+  document.getElementById('syncBanner').hidden = true;
+});
+
+document.getElementById('syncBannerImport').addEventListener('click', () => {
+  document.getElementById('importInput').click();
+});
+
 render();
