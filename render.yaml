@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cash-flow-tracker
+    env: static
+    buildCommand: ""
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
