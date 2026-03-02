@@ -6,7 +6,7 @@
 
 const CATEGORIES = {
   income:  ['Rent', 'Salary', 'Venmo', 'Other'],
-  expense: ['Rent', 'Credit Card', 'Venmo', 'Other'],
+  expense: ['Rent', 'Credit Card', 'Venmo', 'Investment', 'Other'],
 };
 
 const CATEGORY_COLORS = [
