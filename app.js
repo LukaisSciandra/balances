@@ -121,10 +121,16 @@ function nextDueDate(day) {
 
 function nextDate(d, freq) {
   const n = new Date(d);
-  if (freq === 'weekly')   n.setDate(n.getDate() + 7);
-  if (freq === 'biweekly') n.setDate(n.getDate() + 14);
-  if (freq === 'monthly')  n.setMonth(n.getMonth() + 1);
-  if (freq === 'yearly')   n.setFullYear(n.getFullYear() + 1);
+  if (freq === 'weekly')    n.setDate(n.getDate() + 7);
+  if (freq === 'bimonthly') {
+    const y = n.getFullYear(), m = n.getMonth(), day = n.getDate();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    if (day < 15)        return new Date(y, m,     15);
+    if (day < lastDay)   return new Date(y, m,     lastDay);
+    /* last day → */     return new Date(y, m + 1, 15);
+  }
+  if (freq === 'monthly')   n.setMonth(n.getMonth() + 1);
+  if (freq === 'yearly')    n.setFullYear(n.getFullYear() + 1);
   return n;
 }
 
@@ -432,7 +438,7 @@ function escHtml(str) {
    Recurring Table
    ============================================ */
 
-const FREQ_LABELS = { weekly: 'Weekly', biweekly: 'Bi-weekly', monthly: 'Monthly', yearly: 'Yearly' };
+const FREQ_LABELS = { weekly: 'Weekly', bimonthly: 'Bimonthly', monthly: 'Monthly', yearly: 'Yearly' };
 
 function updateRecurringTable() {
   const tbody = document.getElementById('recurringTableBody');
