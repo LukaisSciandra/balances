@@ -95,6 +95,37 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function dateStr(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function nextDate(d, freq) {
+  const n = new Date(d);
+  if (freq === 'weekly')   n.setDate(n.getDate() + 7);
+  if (freq === 'biweekly') n.setDate(n.getDate() + 14);
+  if (freq === 'monthly')  n.setMonth(n.getMonth() + 1);
+  if (freq === 'yearly')   n.setFullYear(n.getFullYear() + 1);
+  return n;
+}
+
+// Expands recurring transactions into individual instances up to endDate.
+// Non-recurring transactions are returned as-is (unfiltered by date).
+function expandRecurring(txs, endDate) {
+  const result = [];
+  for (const tx of txs) {
+    if (!tx.recurring) {
+      result.push(tx);
+      continue;
+    }
+    let d = new Date(tx.date + 'T00:00:00');
+    while (d <= endDate) {
+      result.push({ ...tx, date: dateStr(d), id: tx.id + '_' + dateStr(d) });
+      d = nextDate(d, tx.recurring);
+    }
+  }
+  return result;
+}
+
 /* ============================================
    Filtering
    ============================================ */
@@ -163,18 +194,18 @@ function updateSummary() {}
    Cash Flow by Date
    ============================================ */
 
-function updateCashFlowTable() {
+function updateCashFlowTable(expanded) {
   const period = document.getElementById('periodFilter').value;
   const range  = getPeriodRange(period);
   const tbody  = document.getElementById('cashflowDateBody');
 
-  // Reflect current opening balance in the header display
+  // Reflect current balance in the header display
   const displayEl = document.getElementById('currentBalanceDisplay');
   displayEl.textContent = fmt(currentBalance);
   displayEl.className   = 'current-balance-value' + (currentBalance < 0 ? ' expense' : '');
 
-  // Walk all transactions in chronological order to compute running balance
-  const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+  // Walk all expanded transactions in chronological order to compute running balance
+  const sorted = [...expanded].sort((a, b) => a.date.localeCompare(b.date));
 
   let balance = currentBalance;
   const dateMap = new Map();
@@ -361,7 +392,7 @@ function buildMonthlyBuckets(txs, count) {
     const month = d.getMonth();
     const label = d.toLocaleDateString('en-US', { month: 'short' });
 
-    const monthTxs = transactions.filter(tx => {
+    const monthTxs = txs.filter(tx => {
       const td = new Date(tx.date + 'T00:00:00');
       return td.getFullYear() === year && td.getMonth() === month;
     });
@@ -392,6 +423,7 @@ function updateTable(txs) {
       <td class="tx-date">${fmtDate(tx.date)}</td>
       <td>
         <span class="tx-desc">${escHtml(tx.description)}</span>
+        ${tx.recurring ? `<span class="badge badge-recurring">↻ ${escHtml(tx.recurring)}</span>` : ''}
         ${tx.note ? `<span class="tx-note">${escHtml(tx.note)}</span>` : ''}
       </td>
       <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}</td>
@@ -439,12 +471,18 @@ function populateCategoryFilter() {
    ============================================ */
 
 function render() {
-  const txs = getFilteredTransactions();
-  updateSummary(filterByPeriod(transactions, document.getElementById('periodFilter').value));
-  updateTable(txs);
-  updateCashFlowTable();
-  updateCategoryBreakdown(filterByPeriod(transactions, document.getElementById('periodFilter').value));
-  updateChart(transactions);
+  const period  = document.getElementById('periodFilter').value;
+  const range   = getPeriodRange(period);
+  const cutoff  = range ? range.end : new Date(new Date().getFullYear() + 2, 11, 31);
+
+  const expanded  = expandRecurring(transactions, cutoff);
+  const periodTxs = filterByPeriod(expanded, period);
+
+  updateSummary(periodTxs);
+  updateTable(getFilteredTransactions());
+  updateCashFlowTable(expanded);
+  updateCategoryBreakdown(periodTxs);
+  updateChart(expandRecurring(transactions, new Date()));
   populateCategoryFilter();
 }
 
@@ -499,6 +537,7 @@ window.openEdit = function(id) {
   document.getElementById('txAmount').value      = tx.amount;
   document.getElementById('txDate').value        = tx.date;
   document.getElementById('txNote').value        = tx.note || '';
+  document.getElementById('txRecurring').value   = tx.recurring || '';
 
   // Set category after options are updated
   const catSel = document.getElementById('txCategory');
@@ -545,6 +584,7 @@ function closeEditBalance() {
 document.getElementById('txForm').addEventListener('submit', e => {
   e.preventDefault();
 
+  const recurring = document.getElementById('txRecurring').value || null;
   const tx = {
     id:          editingId || uid(),
     type:        document.getElementById('txType').value,
@@ -553,6 +593,7 @@ document.getElementById('txForm').addEventListener('submit', e => {
     category:    document.getElementById('txCategory').value,
     date:        document.getElementById('txDate').value,
     note:        document.getElementById('txNote').value.trim(),
+    recurring,
   };
 
   if (!tx.description || isNaN(tx.amount) || tx.amount <= 0) return;
