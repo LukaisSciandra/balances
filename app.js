@@ -145,7 +145,7 @@ function expandRecurring(txs, endDate) {
     }
     let d = new Date(tx.date + 'T00:00:00');
     while (d <= endDate) {
-      result.push({ ...tx, date: dateStr(d), id: tx.id + '_' + dateStr(d) });
+      result.push({ ...tx, date: dateStr(d), id: tx.id + '_' + dateStr(d), _sourceId: tx.id });
       d = nextDate(d, tx.recurring);
     }
   }
@@ -392,7 +392,6 @@ function updateCategoryBreakdown(txs) {
 
 function updateTable(txs) {
   const tbody = document.getElementById('txTableBody');
-  txs = txs.filter(tx => !tx.recurring);
 
   const period = document.getElementById('periodFilter').value;
   const range  = getPeriodRange(period);
@@ -428,13 +427,13 @@ function updateTable(txs) {
       </td>
       <td class="tx-amount ${row.type}">${row.type === 'income' ? '+' : '-'}${fmt(row.amount)}</td>
       <td class="tx-actions">
-        <button class="icon-btn" title="Edit" onclick="openEdit('${row.id}')">
+        <button class="icon-btn" title="Edit" onclick="openEdit('${row._sourceId || row.id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
         </button>
-        <button class="icon-btn delete" title="Delete" onclick="openDelete('${row.id}')">
+        <button class="icon-btn delete" title="Delete" onclick="openDelete('${row._sourceId || row.id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
@@ -502,14 +501,24 @@ function updateRecurringTable() {
 
 function render() {
   const period  = document.getElementById('periodFilter').value;
+  const type    = document.getElementById('typeFilter').value;
+  const search  = document.getElementById('searchInput').value.trim().toLowerCase();
   const range   = getPeriodRange(period);
   const cutoff  = range ? range.end : new Date(new Date().getFullYear() + 2, 11, 31);
 
   const expanded  = expandRecurring(transactions, cutoff);
   const periodTxs = filterByPeriod(expanded, period);
 
+  let tableTxs = periodTxs;
+  if (type !== 'all') tableTxs = tableTxs.filter(tx => tx.type === type);
+  if (search) tableTxs = tableTxs.filter(tx =>
+    tx.description.toLowerCase().includes(search) ||
+    tx.category.toLowerCase().includes(search) ||
+    (tx.note && tx.note.toLowerCase().includes(search))
+  );
+
   updateSummary(periodTxs);
-  updateTable(getFilteredTransactions());
+  updateTable(tableTxs);
   updateRecurringTable();
   updateCashFlowTable(expanded);
   updateCategoryBreakdown(periodTxs);
