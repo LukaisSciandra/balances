@@ -163,19 +163,7 @@ function getFilteredTransactions() {
    Summary
    ============================================ */
 
-function updateSummary(txs) {
-  const income   = txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expenses = txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const net      = income - expenses;
-
-  document.getElementById('totalIncome').textContent   = fmt(income);
-  document.getElementById('totalExpenses').textContent = fmt(expenses);
-  document.getElementById('txCount').textContent       = txs.length;
-
-  const netEl = document.getElementById('netFlow');
-  netEl.textContent = fmt(net);
-  netEl.className = 'card-value ' + (net >= 0 ? 'positive' : 'negative');
-}
+function updateSummary() {}
 
 /* ============================================
    Category Breakdown
