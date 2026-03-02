@@ -1,0 +1,13 @@
+{
+  "name": "cash-flow-tracker",
+  "version": "1.0.0",
+  "description": "A personal cash flow tracking app to manage income and expenses",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve . -p 3000",
+    "dev": "npx live-server --port=3000"
+  },
+  "keywords": ["cash-flow", "finance", "budget", "tracker"],
+  "author": "",
+  "license": "MIT"
+}
