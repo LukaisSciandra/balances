@@ -235,11 +235,12 @@ function getCreditCardPlaceholders(range) {
       const mo = String(d.getMonth() + 1).padStart(2, '0');
       const da = String(d.getDate()).padStart(2, '0');
       const dueDate = `${y}-${mo}-${da}`;
+      const isPast = d < new Date(today() + 'T00:00:00');
       const paid = transactions.some(tx =>
         tx.type === 'expense' && tx.category === 'Credit Card' &&
         tx.date === dueDate && (!tx.card || tx.card === card.name)
       );
-      if (!paid) {
+      if (!paid && !isPast) {
         result.push({ date: dueDate, cardName: card.name, isPlaceholder: true });
       }
       d = new Date(d.getFullYear(), d.getMonth() + 1, card.day);
