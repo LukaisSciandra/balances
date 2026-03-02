@@ -181,7 +181,7 @@ function getFilteredTransactions() {
     (tx.note && tx.note.toLowerCase().includes(search))
   );
 
-  return txs.sort((a, b) => b.date.localeCompare(a.date));
+  return txs.sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /* ============================================
