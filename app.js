@@ -554,8 +554,8 @@ function resetForm() {
   document.getElementById('editId').value = '';
   document.getElementById('txDate').value = today();
   setType('income');
-  document.getElementById('modalTitle').textContent = 'Add Transaction';
-  document.getElementById('submitBtn').textContent  = 'Add Transaction';
+  document.getElementById('modalTitle').textContent = 'Transaction';
+  document.getElementById('submitBtn').textContent  = 'Transaction';
   updateCategoryOptions('income');
   // Restore any CC-mode layout overrides
   document.getElementById('typeGroup').hidden        = false;
