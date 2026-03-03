@@ -361,11 +361,18 @@ function updateCategoryBreakdown(txs) {
 
   const totals = {};
   relevant.forEach(tx => {
-    totals[tx.category] = (totals[tx.category] || 0) + tx.amount;
+    const sign = tx.type === 'income' ? -1 : 1;
+    totals[tx.category] = (totals[tx.category] || 0) + sign * tx.amount;
   });
 
-  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  const max    = sorted[0][1];
+  const sorted = Object.entries(totals)
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]);
+  if (!sorted.length) {
+    container.innerHTML = '<p class="empty-msg">No expense data.</p>';
+    return;
+  }
+  const max = sorted[0][1];
 
   container.innerHTML = sorted.map(([cat, amount], i) => {
     const pct   = Math.round((amount / max) * 100);
