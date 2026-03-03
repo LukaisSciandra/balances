@@ -384,27 +384,16 @@ function updateCategoryBreakdown(txs) {
     totals[tx.category] = (totals[tx.category] || 0) + sign * tx.amount;
   });
 
-  // Robinhood brokerage amounts reduce Investment flows (money pulled from brokerage, not cash)
-  txs.forEach(tx => {
-    if (tx.brokerageAmount && tx.card === 'Robinhood') {
-      totals['Investment'] = (totals['Investment'] || 0) - tx.brokerageAmount;
-    }
-  });
-
-  const positives = Object.entries(totals).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-  const negatives = Object.entries(totals).filter(([, v]) => v < 0).sort((a, b) => a[1] - b[1]);
-  const sorted = [...positives, ...negatives];
-
+  const sorted = Object.entries(totals).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
   if (!sorted.length) {
     container.innerHTML = '<p class="empty-msg">No expense data.</p>';
     return;
   }
-  const max = positives.length ? positives[0][1] : 1;
+  const max = sorted[0][1];
 
   container.innerHTML = sorted.map(([cat, amount], i) => {
-    const isNeg = amount < 0;
-    const color = isNeg ? 'var(--income)' : CATEGORY_COLORS[i % CATEGORY_COLORS.length];
-    const pct   = isNeg ? 0 : Math.round((amount / max) * 100);
+    const pct   = Math.round((amount / max) * 100);
+    const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
     return `
       <div class="category-item">
         <div class="category-item-header">
@@ -435,7 +424,8 @@ function updateFlowsChart(txs) {
     } else if (tx.type === 'income') {
       inflows += tx.amount;
     } else {
-      outflows += tx.amount;
+      outflows += tx.amount - (tx.brokerageAmount || 0);
+      investment -= (tx.brokerageAmount || 0);
     }
   }
 
@@ -444,11 +434,11 @@ function updateFlowsChart(txs) {
     return;
   }
 
-  const max = Math.max(inflows, outflows, investment);
+  const max = Math.max(inflows, outflows, Math.abs(investment));
   const rows = [
     { label: 'Inflows',    value: inflows,    color: 'var(--income)',  prefix: '+' },
     { label: 'Outflows',   value: outflows,   color: 'var(--expense)', prefix: '-' },
-    { label: 'Investment', value: investment, color: '#6366f1',        prefix: ''  },
+    { label: 'Investment', value: investment, color: '#6366f1',        prefix: '' },
   ];
 
   container.innerHTML = rows.map(r => `
