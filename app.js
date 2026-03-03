@@ -144,8 +144,10 @@ function expandRecurring(txs, endDate) {
       result.push(tx);
       continue;
     }
+    const txEnd = tx.recurringEnd ? new Date(tx.recurringEnd + 'T00:00:00') : null;
+    const limit = txEnd && txEnd < endDate ? txEnd : endDate;
     let d = new Date(tx.date + 'T00:00:00');
-    while (d <= endDate) {
+    while (d <= limit) {
       result.push({ ...tx, date: dateStr(d), id: tx.id + '_' + dateStr(d), _sourceId: tx.id });
       d = nextDate(d, tx.recurring);
     }
@@ -490,7 +492,10 @@ function updateRecurringTable() {
       </td>
       <td><span class="badge badge-${tx.type}">${tx.type === 'income' ? 'Income' : 'Expense'}</span></td>
       <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}</td>
-      <td>${FREQ_LABELS[tx.recurring] || tx.recurring}</td>
+      <td>
+        ${FREQ_LABELS[tx.recurring] || tx.recurring}
+        ${tx.recurringEnd ? `<span class="tx-note">until ${new Date(tx.recurringEnd + 'T00:00:00').toLocaleDateString()}</span>` : ''}
+      </td>
       <td class="tx-actions">
         <button class="icon-btn" title="Edit" onclick="openEdit('${tx.id}')">${editIcon}</button>
         <button class="icon-btn delete" title="Delete" onclick="openDelete('${tx.id}')">${deleteIcon}</button>
@@ -560,6 +565,7 @@ function resetForm() {
   document.getElementById('descriptionGroup').hidden = false;
   document.getElementById('categoryGroup').hidden    = false;
   document.getElementById('cardPickerRow').style.order = '';
+  updateRecurringEndVisibility();
 }
 
 function setCCModeLayout(on) {
@@ -604,6 +610,12 @@ function setType(type) {
   updateCategoryOptions(type);
 }
 
+function updateRecurringEndVisibility() {
+  const hasRecurring = !!document.getElementById('txRecurring').value;
+  document.getElementById('recurringEndRow').hidden = !hasRecurring;
+  if (!hasRecurring) document.getElementById('txRecurringEnd').value = '';
+}
+
 function updateCardPickerVisibility() {
   const isCC = document.getElementById('txCategory').value === 'Credit';
   document.getElementById('cardPickerRow').hidden = !isCC;
@@ -636,8 +648,10 @@ window.openEdit = function(id) {
     document.getElementById('txDescription').value = tx.description;
     document.getElementById('txAmount').value      = tx.amount;
     document.getElementById('txDate').value        = tx.date;
-    document.getElementById('txNote').value        = tx.note || '';
-    document.getElementById('txRecurring').value   = tx.recurring || '';
+    document.getElementById('txNote').value         = tx.note || '';
+    document.getElementById('txRecurring').value    = tx.recurring || '';
+    document.getElementById('txRecurringEnd').value = tx.recurringEnd || '';
+    updateRecurringEndVisibility();
     document.getElementById('modalTitle').textContent = 'Edit CC Payment';
     document.getElementById('submitBtn').textContent  = 'Save Changes';
   } else {
@@ -645,8 +659,10 @@ window.openEdit = function(id) {
     document.getElementById('txDescription').value = tx.description;
     document.getElementById('txAmount').value      = tx.amount;
     document.getElementById('txDate').value        = tx.date;
-    document.getElementById('txNote').value        = tx.note || '';
-    document.getElementById('txRecurring').value   = tx.recurring || '';
+    document.getElementById('txNote').value         = tx.note || '';
+    document.getElementById('txRecurring').value    = tx.recurring || '';
+    document.getElementById('txRecurringEnd').value = tx.recurringEnd || '';
+    updateRecurringEndVisibility();
     const catSel = document.getElementById('txCategory');
     const opt = [...catSel.options].find(o => o.value === tx.category);
     if (opt) catSel.value = tx.category;
@@ -695,17 +711,19 @@ function closeEditBalance() {
 document.getElementById('txForm').addEventListener('submit', e => {
   e.preventDefault();
 
-  const recurring = document.getElementById('txRecurring').value || null;
-  const card      = document.getElementById('txCard').value || null;
+  const recurring    = document.getElementById('txRecurring').value || null;
+  const recurringEnd = (recurring && document.getElementById('txRecurringEnd').value) || null;
+  const card         = document.getElementById('txCard').value || null;
   const tx = {
-    id:          editingId || uid(),
-    type:        document.getElementById('txType').value,
-    description: document.getElementById('txDescription').value.trim(),
-    amount:      parseFloat(document.getElementById('txAmount').value),
-    category:    document.getElementById('txCategory').value,
-    date:        document.getElementById('txDate').value,
-    note:        document.getElementById('txNote').value.trim(),
+    id:           editingId || uid(),
+    type:         document.getElementById('txType').value,
+    description:  document.getElementById('txDescription').value.trim(),
+    amount:       parseFloat(document.getElementById('txAmount').value),
+    category:     document.getElementById('txCategory').value,
+    date:         document.getElementById('txDate').value,
+    note:         document.getElementById('txNote').value.trim(),
     recurring,
+    recurringEnd,
     card,
   };
 
@@ -777,6 +795,9 @@ document.getElementById('currentBalanceInput').addEventListener('keydown', e => 
   if (e.key === 'Enter')  confirmEditBalance();
   if (e.key === 'Escape') closeEditBalance();
 });
+
+// Recurring end date
+document.getElementById('txRecurring').addEventListener('change', updateRecurringEndVisibility);
 
 // Credit card picker
 document.getElementById('txCategory').addEventListener('change', updateCardPickerVisibility);
