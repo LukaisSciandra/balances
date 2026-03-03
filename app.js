@@ -355,7 +355,10 @@ function updateCashFlowTable(expanded) {
 
 function updateCategoryBreakdown(txs) {
   const container = document.getElementById('categoryBreakdown');
-  const relevant = txs.filter(t => t.type === 'expense' || (t.type === 'income' && t.category === 'Rent'));
+  const relevant = txs.filter(t =>
+    (t.type === 'expense' && t.category !== 'Investment') ||
+    (t.type === 'income' && t.category === 'Rent')
+  );
 
   if (!relevant.length) {
     container.innerHTML = '<p class="empty-msg">No expense data.</p>';
@@ -394,6 +397,51 @@ function updateCategoryBreakdown(txs) {
         </div>
       </div>`;
   }).join('');
+}
+
+/* ============================================
+   Flows Chart
+   ============================================ */
+
+function updateFlowsChart(txs) {
+  const container = document.getElementById('flowsChart');
+
+  let inflows = 0, outflows = 0, investment = 0;
+  for (const tx of txs) {
+    if (tx.category === 'Investment') {
+      investment += tx.amount;
+    } else if (tx.type === 'income') {
+      inflows += tx.amount;
+    } else {
+      outflows += tx.amount;
+    }
+  }
+
+  if (!inflows && !outflows && !investment) {
+    container.innerHTML = '<p class="empty-msg">No data.</p>';
+    return;
+  }
+
+  const max = Math.max(inflows, outflows, investment);
+  const rows = [
+    { label: 'Inflows',    value: inflows,    color: 'var(--income)',  prefix: '+' },
+    { label: 'Outflows',   value: outflows,   color: 'var(--expense)', prefix: '-' },
+    { label: 'Investment', value: investment, color: '#6366f1',        prefix: ''  },
+  ];
+
+  container.innerHTML = rows.map(r => `
+    <div class="category-item">
+      <div class="category-item-header">
+        <span class="category-item-name">
+          <span class="category-dot" style="background:${r.color}"></span>
+          ${r.label}
+        </span>
+        <span class="category-item-amount" style="color:${r.color}">${r.prefix}${fmt(r.value)}</span>
+      </div>
+      <div class="category-bar-track">
+        <div class="category-bar-fill" style="width:${max ? Math.round((r.value / max) * 100) : 0}%;background:${r.color}"></div>
+      </div>
+    </div>`).join('');
 }
 
 /* ============================================
@@ -532,6 +580,7 @@ function render() {
   updateRecurringTable();
   updateCashFlowTable(expanded);
   updateCategoryBreakdown(periodTxs);
+  updateFlowsChart(periodTxs);
 }
 
 /* ============================================

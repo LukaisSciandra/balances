@@ -237,6 +237,12 @@ body {
   transition: width 0.4s ease;
 }
 
+.flows-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .empty-msg {
   color: var(--text-muted);
   font-size: 13px;
