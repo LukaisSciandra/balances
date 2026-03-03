@@ -492,10 +492,7 @@ function updateRecurringTable() {
       </td>
       <td><span class="badge badge-${tx.type}">${tx.type === 'income' ? 'Income' : 'Expense'}</span></td>
       <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}</td>
-      <td>
-        ${FREQ_LABELS[tx.recurring] || tx.recurring}
-        ${tx.recurringEnd ? `<span class="tx-note">until ${new Date(tx.recurringEnd + 'T00:00:00').toLocaleDateString()}</span>` : ''}
-      </td>
+      <td>${FREQ_LABELS[tx.recurring] || tx.recurring}</td>
       <td class="tx-actions">
         <button class="icon-btn" title="Edit" onclick="openEdit('${tx.id}')">${editIcon}</button>
         <button class="icon-btn delete" title="Delete" onclick="openDelete('${tx.id}')">${deleteIcon}</button>
