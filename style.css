@@ -710,6 +710,35 @@ body {
 }
 
 /* ============================================
+   Bottom Bar
+   ============================================ */
+.bottom-bar {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.bottom-bar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bottom-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ============================================
    Scrollbar
    ============================================ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
