@@ -279,15 +279,16 @@ function updateCashFlowTable(expanded) {
   const dateMap = new Map();
 
   for (const tx of sorted) {
-    if (tx.type === 'income') balance += tx.amount;
-    else                      balance -= tx.amount;
+    const net = tx.amount - (tx.brokerageAmount || 0);
+    if (tx.type === 'income') balance += net;
+    else                      balance -= net;
 
     if (!dateMap.has(tx.date)) {
       dateMap.set(tx.date, { inflow: 0, outflow: 0, balance: 0 });
     }
     const entry = dateMap.get(tx.date);
-    if (tx.type === 'income') entry.inflow  += tx.amount;
-    else                      entry.outflow += tx.amount;
+    if (tx.type === 'income') entry.inflow  += net;
+    else                      entry.outflow += net;
     entry.balance = balance;
   }
 
@@ -383,18 +384,27 @@ function updateCategoryBreakdown(txs) {
     totals[tx.category] = (totals[tx.category] || 0) + sign * tx.amount;
   });
 
-  const sorted = Object.entries(totals)
-    .filter(([, v]) => v > 0)
-    .sort((a, b) => b[1] - a[1]);
+  // Robinhood brokerage amounts reduce Investment flows (money pulled from brokerage, not cash)
+  txs.forEach(tx => {
+    if (tx.brokerageAmount && tx.card === 'Robinhood') {
+      totals['Investment'] = (totals['Investment'] || 0) - tx.brokerageAmount;
+    }
+  });
+
+  const positives = Object.entries(totals).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  const negatives = Object.entries(totals).filter(([, v]) => v < 0).sort((a, b) => a[1] - b[1]);
+  const sorted = [...positives, ...negatives];
+
   if (!sorted.length) {
     container.innerHTML = '<p class="empty-msg">No expense data.</p>';
     return;
   }
-  const max = sorted[0][1];
+  const max = positives.length ? positives[0][1] : 1;
 
   container.innerHTML = sorted.map(([cat, amount], i) => {
-    const pct   = Math.round((amount / max) * 100);
-    const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
+    const isNeg = amount < 0;
+    const color = isNeg ? 'var(--income)' : CATEGORY_COLORS[i % CATEGORY_COLORS.length];
+    const pct   = isNeg ? 0 : Math.round((amount / max) * 100);
     return `
       <div class="category-item">
         <div class="category-item-header">
@@ -623,6 +633,7 @@ function resetForm() {
   document.getElementById('descriptionGroup').hidden = false;
   document.getElementById('categoryGroup').hidden    = false;
   document.getElementById('cardPickerRow').style.order = '';
+  document.getElementById('brokerageRow').hidden = true;
   updateRecurringEndVisibility();
 }
 
@@ -709,6 +720,8 @@ window.openEdit = function(id) {
     document.getElementById('txNote').value         = tx.note || '';
     document.getElementById('txRecurring').value    = tx.recurring || '';
     document.getElementById('txRecurringEnd').value = tx.recurringEnd || '';
+    document.getElementById('txBrokerage').value    = tx.brokerageAmount || '';
+    document.getElementById('brokerageRow').hidden  = tx.card !== 'Robinhood';
     updateRecurringEndVisibility();
     document.getElementById('modalTitle').textContent = 'Edit CC Payment';
     document.getElementById('submitBtn').textContent  = 'Save Changes';
@@ -809,6 +822,8 @@ document.getElementById('txForm').addEventListener('submit', e => {
   const recurring    = document.getElementById('txRecurring').value || null;
   const recurringEnd = (recurring && document.getElementById('txRecurringEnd').value) || null;
   const card         = document.getElementById('txCard').value || null;
+  const brokerageRaw = parseFloat(document.getElementById('txBrokerage').value);
+  const brokerageAmount = (card === 'Robinhood' && brokerageRaw > 0) ? brokerageRaw : null;
   const tx = {
     id:           editingId || uid(),
     type:         document.getElementById('txType').value,
@@ -820,6 +835,7 @@ document.getElementById('txForm').addEventListener('submit', e => {
     recurring,
     recurringEnd,
     card,
+    brokerageAmount,
   };
 
   if (!tx.description || isNaN(tx.amount)) return;
@@ -907,11 +923,14 @@ document.getElementById('txRecurring').addEventListener('change', updateRecurrin
 // Credit card picker
 document.getElementById('txCategory').addEventListener('change', updateCardPickerVisibility);
 document.getElementById('txCard').addEventListener('change', () => {
-  const card = CREDIT_CARDS.find(c => c.name === document.getElementById('txCard').value);
+  const cardName = document.getElementById('txCard').value;
+  const card = CREDIT_CARDS.find(c => c.name === cardName);
   if (card) {
     document.getElementById('txDate').value = nextDueDate(card.day);
     if (ccMode) document.getElementById('txDescription').value = card.name;
   }
+  document.getElementById('brokerageRow').hidden = cardName !== 'Robinhood';
+  if (cardName !== 'Robinhood') document.getElementById('txBrokerage').value = '';
 });
 
 // Filters
