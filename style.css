@@ -80,6 +80,15 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  position: relative;
+}
+
+.btn-invest {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .logo {
@@ -757,6 +766,72 @@ body {
 .custom-date-sep {
   color: var(--text-muted);
   font-size: 13px;
+}
+
+/* ============================================
+   Invest Modal
+   ============================================ */
+
+.invest-amount {
+  font-size: 2.4rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--income);
+  letter-spacing: -0.5px;
+  padding: 16px 0 4px;
+}
+
+.invest-amount.negative {
+  color: var(--expense);
+}
+
+.invest-date {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.invest-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+
+.invest-pending {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.invest-pending-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+
+.invest-pending-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.invest-pending-item:last-child {
+  border-bottom: none;
+}
+
+.invest-pending-card {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 /* ============================================

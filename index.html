@@ -18,6 +18,7 @@
           </svg>
           <span>CashFlow</span>
         </div>
+        <button class="btn btn-ghost btn-invest" id="investBtn">+ $</button>
         <div class="header-controls">
           <button class="btn btn-ghost" id="openCCModalBtn">+ CC payment</button>
           <button class="btn btn-primary" id="openModalBtn">+ Transaction</button>
@@ -270,6 +271,22 @@
         <button class="btn btn-ghost" id="cancelDeleteBtn">Cancel</button>
         <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Invest Modal -->
+  <div class="modal-overlay" id="investOverlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2>Investable Amount</h2>
+        <button class="modal-close" id="closeInvestBtn" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div id="investContent"></div>
     </div>
   </div>
 

@@ -34,6 +34,7 @@ let currentBalance = loadBalance();
 let editingId      = null;
 let pendingDeleteId = null;
 let ccMode         = false;
+let _cashFlowRows  = [];
 
 /* ============================================
    Persistence
@@ -314,6 +315,7 @@ function updateCashFlowTable(expanded) {
   }
 
   if (!rows.length) {
+    _cashFlowRows = [];
     tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No transactions found.</td></tr>';
     return;
   }
@@ -328,6 +330,7 @@ function updateCashFlowTable(expanded) {
     if (b.isPlaceholder) return -1;
     return 0;
   });
+  _cashFlowRows = rows;
 
   tbody.innerHTML = rows.map(r => {
     if (r.isCurrent) {
@@ -735,6 +738,43 @@ window.openDelete = function(id) {
 };
 
 /* ============================================
+   Invest Modal
+   ============================================ */
+
+function openInvestModal() {
+  const balanceRows = _cashFlowRows.filter(r => !r.isPlaceholder);
+  if (!balanceRows.length) return;
+
+  const minRow = balanceRows.reduce((min, r) => r.balance < min.balance ? r : min, balanceRows[0]);
+  const pendingAfter = _cashFlowRows.filter(r => r.isPlaceholder && r.date > minRow.date);
+
+  const dateLabel = minRow.isCurrent ? 'Current balance' : `Lowest on ${fmtDate(minRow.date)}`;
+
+  const pendingHtml = pendingAfter.length ? `
+    <div class="invest-pending">
+      <p class="invest-pending-title">Pending payments after this date</p>
+      ${pendingAfter.map(p => `
+        <div class="invest-pending-item">
+          <span>${fmtDate(p.date)}</span>
+          <span class="invest-pending-card">${escHtml(p.cardName)}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  const noteText = pendingAfter.length
+    ? 'Projected floor for this period. Pending payments below are not yet reflected in this figure.'
+    : 'Projected floor for this period — a safe upper bound for what can be invested without overdrafting.';
+
+  document.getElementById('investContent').innerHTML = `
+    <div class="invest-amount${minRow.balance < 0 ? ' negative' : ''}">${fmt(minRow.balance)}</div>
+    <p class="invest-date">${dateLabel}</p>
+    <p class="invest-note">${noteText}</p>
+    ${pendingHtml}
+  `;
+
+  document.getElementById('investOverlay').classList.add('open');
+}
+
+/* ============================================
    Current Balance Editing
    ============================================ */
 
@@ -839,6 +879,16 @@ document.getElementById('deleteOverlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) {
     pendingDeleteId = null;
     document.getElementById('deleteOverlay').classList.remove('open');
+  }
+});
+
+document.getElementById('investBtn').addEventListener('click', openInvestModal);
+document.getElementById('closeInvestBtn').addEventListener('click', () => {
+  document.getElementById('investOverlay').classList.remove('open');
+});
+document.getElementById('investOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) {
+    document.getElementById('investOverlay').classList.remove('open');
   }
 });
 
