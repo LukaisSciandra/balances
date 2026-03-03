@@ -237,7 +237,7 @@ function getCreditCardPlaceholders(range) {
       const dueDate = `${y}-${mo}-${da}`;
       const isPast = d < new Date(today() + 'T00:00:00');
       const paid = transactions.some(tx =>
-        tx.type === 'expense' && tx.category === 'Credit Card' &&
+        tx.type === 'expense' && tx.category === 'Credit' &&
         tx.date === dueDate && (!tx.card || tx.card === card.name)
       );
       if (!paid && !isPast) {
@@ -419,7 +419,7 @@ function updateTable(txs) {
       return `
     <tr class="cc-placeholder-row">
       <td class="tx-date">${fmtDate(row.date)}</td>
-      <td><span class="tx-desc">${escHtml(row.cardName)}</span><span class="cc-placeholder-label">Credit Card</span></td>
+      <td><span class="tx-desc">${escHtml(row.cardName)}</span><span class="cc-placeholder-label">Credit</span></td>
       <td class="cc-placeholder-amount">pending</td>
       <td></td>
     </tr>`;
@@ -564,7 +564,7 @@ function setType(type) {
 }
 
 function updateCardPickerVisibility() {
-  const isCC = document.getElementById('txCategory').value === 'Credit Card';
+  const isCC = document.getElementById('txCategory').value === 'Credit';
   document.getElementById('cardPickerRow').hidden = !isCC;
   if (!isCC) document.getElementById('txCard').value = '';
 }
