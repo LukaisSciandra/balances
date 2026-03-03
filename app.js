@@ -6,7 +6,7 @@
 
 const CATEGORIES = {
   income:  ['Salary', 'Debit','Rent'],
-  expense: ['Credit', 'Debit', 'Investment','Rent'],
+  expense: ['Debit', 'Investment','Rent'],
 };
 
 const CREDIT_CARDS = [
@@ -555,6 +555,18 @@ function resetForm() {
   updateCategoryOptions('income');
 }
 
+function openCCModal() {
+  resetForm();
+  setType('expense');
+  const catSel = document.getElementById('txCategory');
+  catSel.innerHTML = '<option value="Credit">Credit</option>';
+  catSel.value = 'Credit';
+  updateCardPickerVisibility();
+  document.getElementById('modalTitle').textContent = 'Add CC Payment';
+  document.getElementById('submitBtn').textContent  = 'Add CC Payment';
+  openModal();
+}
+
 function setType(type) {
   document.getElementById('txType').value = type;
   document.querySelectorAll('.type-btn').forEach(btn => {
@@ -673,6 +685,8 @@ document.getElementById('openModalBtn').addEventListener('click', () => {
   resetForm();
   openModal();
 });
+
+document.getElementById('openCCModalBtn').addEventListener('click', openCCModal);
 
 document.getElementById('closeModalBtn').addEventListener('click', closeModal);
 document.getElementById('cancelBtn').addEventListener('click', closeModal);
