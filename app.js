@@ -33,6 +33,7 @@ let transactions   = loadTransactions();
 let currentBalance = loadBalance();
 let editingId      = null;
 let pendingDeleteId = null;
+let ccMode         = false;
 
 /* ============================================
    Persistence
@@ -546,6 +547,7 @@ function closeModal() {
 }
 
 function resetForm() {
+  ccMode = false;
   document.getElementById('txForm').reset();
   document.getElementById('editId').value = '';
   document.getElementById('txDate').value = today();
@@ -553,6 +555,33 @@ function resetForm() {
   document.getElementById('modalTitle').textContent = 'Add Transaction';
   document.getElementById('submitBtn').textContent  = 'Add Transaction';
   updateCategoryOptions('income');
+  // Restore any CC-mode layout overrides
+  document.getElementById('typeGroup').hidden        = false;
+  document.getElementById('descriptionGroup').hidden = false;
+  document.getElementById('categoryGroup').hidden    = false;
+  document.getElementById('cardPickerRow').style.order = '';
+}
+
+function setCCModeLayout(on) {
+  ccMode = on;
+  document.getElementById('typeGroup').hidden        = on;
+  document.getElementById('descriptionGroup').hidden = on;
+  document.getElementById('categoryGroup').hidden    = on;
+  const cardRow = document.getElementById('cardPickerRow');
+  cardRow.hidden      = !on;
+  cardRow.style.order = on ? '-1' : '';
+  if (on) {
+    // Auto-select first card and populate description + date
+    const cardSel = document.getElementById('txCard');
+    if (cardSel.options.length > 1) {
+      cardSel.value = cardSel.options[1].value;
+      const card = CREDIT_CARDS.find(c => c.name === cardSel.value);
+      if (card) {
+        document.getElementById('txDate').value        = nextDueDate(card.day);
+        document.getElementById('txDescription').value = card.name;
+      }
+    }
+  }
 }
 
 function openCCModal() {
@@ -561,7 +590,7 @@ function openCCModal() {
   const catSel = document.getElementById('txCategory');
   catSel.innerHTML = '<option value="Credit">Credit</option>';
   catSel.value = 'Credit';
-  updateCardPickerVisibility();
+  setCCModeLayout(true);
   document.getElementById('modalTitle').textContent = 'Add CC Payment';
   document.getElementById('submitBtn').textContent  = 'Add CC Payment';
   openModal();
@@ -593,21 +622,38 @@ window.openEdit = function(id) {
   if (!tx) return;
 
   editingId = id;
-  document.getElementById('modalTitle').textContent = 'Edit Transaction';
-  document.getElementById('submitBtn').textContent  = 'Save Changes';
-  document.getElementById('editId').value           = id;
-  setType(tx.type);
-  document.getElementById('txDescription').value = tx.description;
-  document.getElementById('txAmount').value      = tx.amount;
-  document.getElementById('txDate').value        = tx.date;
-  document.getElementById('txNote').value        = tx.note || '';
-  document.getElementById('txRecurring').value   = tx.recurring || '';
+  document.getElementById('editId').value = id;
 
-  // Set category after options are updated
-  const catSel = document.getElementById('txCategory');
-  const opt = [...catSel.options].find(o => o.value === tx.category);
-  if (opt) catSel.value = tx.category;
-  updateCardPickerVisibility();
+  if (tx.category === 'Credit') {
+    resetForm();
+    setType('expense');
+    const catSel = document.getElementById('txCategory');
+    catSel.innerHTML = '<option value="Credit">Credit</option>';
+    catSel.value = 'Credit';
+    setCCModeLayout(true);
+    // Override auto-selected card/date/description with saved values
+    document.getElementById('txCard').value        = tx.card || '';
+    document.getElementById('txDescription').value = tx.description;
+    document.getElementById('txAmount').value      = tx.amount;
+    document.getElementById('txDate').value        = tx.date;
+    document.getElementById('txNote').value        = tx.note || '';
+    document.getElementById('txRecurring').value   = tx.recurring || '';
+    document.getElementById('modalTitle').textContent = 'Edit CC Payment';
+    document.getElementById('submitBtn').textContent  = 'Save Changes';
+  } else {
+    setType(tx.type);
+    document.getElementById('txDescription').value = tx.description;
+    document.getElementById('txAmount').value      = tx.amount;
+    document.getElementById('txDate').value        = tx.date;
+    document.getElementById('txNote').value        = tx.note || '';
+    document.getElementById('txRecurring').value   = tx.recurring || '';
+    const catSel = document.getElementById('txCategory');
+    const opt = [...catSel.options].find(o => o.value === tx.category);
+    if (opt) catSel.value = tx.category;
+    updateCardPickerVisibility();
+    document.getElementById('modalTitle').textContent = 'Edit Transaction';
+    document.getElementById('submitBtn').textContent  = 'Save Changes';
+  }
 
   openModal();
 };
@@ -736,7 +782,10 @@ document.getElementById('currentBalanceInput').addEventListener('keydown', e => 
 document.getElementById('txCategory').addEventListener('change', updateCardPickerVisibility);
 document.getElementById('txCard').addEventListener('change', () => {
   const card = CREDIT_CARDS.find(c => c.name === document.getElementById('txCard').value);
-  if (card) document.getElementById('txDate').value = nextDueDate(card.day);
+  if (card) {
+    document.getElementById('txDate').value = nextDueDate(card.day);
+    if (ccMode) document.getElementById('txDescription').value = card.name;
+  }
 });
 
 // Filters

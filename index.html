@@ -176,7 +176,7 @@
       <form id="txForm" class="tx-form">
         <input type="hidden" id="editId" />
 
-        <div class="form-group">
+        <div class="form-group" id="typeGroup">
           <label>Type</label>
           <div class="type-toggle">
             <button type="button" class="type-btn active" data-type="income">Income</button>
@@ -186,7 +186,7 @@
         </div>
 
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group" id="descriptionGroup">
             <label for="txDescription">Description</label>
             <input type="text" id="txDescription" class="text-input" placeholder="e.g. Salary, Rent..." required />
           </div>
@@ -197,7 +197,7 @@
         </div>
 
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group" id="categoryGroup">
             <label for="txCategory">Category</label>
             <select id="txCategory" class="select-input" required></select>
           </div>
