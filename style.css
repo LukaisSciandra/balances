@@ -80,13 +80,9 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  position: relative;
 }
 
 .btn-invest {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
