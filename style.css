@@ -744,6 +744,21 @@ body {
   gap: 6px;
 }
 
+.custom-date-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-date-range .text-input {
+  width: 128px;
+}
+
+.custom-date-sep {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* ============================================
    Scrollbar
    ============================================ */

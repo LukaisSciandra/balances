@@ -188,7 +188,16 @@ function getPeriodRange(period) {
       end:   new Date(y, 11, 31),
     };
   }
-  return null; // all
+  if (period === 'custom') {
+    const startVal = document.getElementById('customStart').value;
+    const endVal   = document.getElementById('customEnd').value;
+    if (!startVal || !endVal) return null;
+    return {
+      start: new Date(startVal + 'T00:00:00'),
+      end:   new Date(endVal   + 'T00:00:00'),
+    };
+  }
+  return null;
 }
 
 function filterByPeriod(txs, period) {
@@ -857,6 +866,15 @@ document.getElementById('txCard').addEventListener('change', () => {
 
 // Filters
 ['periodFilter', 'typeFilter', 'searchInput'].forEach(id => {
+  document.getElementById(id).addEventListener('input', render);
+});
+
+document.getElementById('periodFilter').addEventListener('input', () => {
+  document.getElementById('customDateRange').hidden =
+    document.getElementById('periodFilter').value !== 'custom';
+});
+
+['customStart', 'customEnd'].forEach(id => {
   document.getElementById(id).addEventListener('input', render);
 });
 

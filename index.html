@@ -140,12 +140,17 @@
     <div class="bottom-bar">
       <div class="bottom-bar-inner">
         <select id="periodFilter" class="select-input">
-          <option value="all">All Time</option>
+          <option value="custom">Custom</option>
           <option value="thisMonth">This Month</option>
           <option value="twoMonth" selected>2-Month View</option>
           <option value="lastMonth">Last Month</option>
           <option value="thisYear">This Year</option>
         </select>
+        <div id="customDateRange" class="custom-date-range" hidden>
+          <input type="date" id="customStart" class="text-input" />
+          <span class="custom-date-sep">–</span>
+          <input type="date" id="customEnd" class="text-input" />
+        </div>
         <div class="bottom-bar-actions">
           <button class="icon-btn" id="exportBtn" title="Export data as JSON">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
