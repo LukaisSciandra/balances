@@ -723,12 +723,42 @@ body {
 /* ============================================
    Bottom Bar
    ============================================ */
-.bottom-bar {
-  background: var(--surface);
-  border-top: 1px solid var(--border);
+.sticky-footer {
   position: sticky;
   bottom: 0;
   z-index: 100;
+}
+
+.custom-date-range {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  padding: 8px 20px;
+  backdrop-filter: blur(8px);
+}
+
+.custom-date-range .text-input {
+  width: 140px;
+}
+
+.custom-date-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.custom-date-sep {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.bottom-bar {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
   backdrop-filter: blur(8px);
 }
 
@@ -747,21 +777,6 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.custom-date-range {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.custom-date-range .text-input {
-  width: 128px;
-}
-
-.custom-date-sep {
-  color: var(--text-muted);
-  font-size: 13px;
 }
 
 /* ============================================
