@@ -417,6 +417,59 @@ function updateCategoryBreakdown(txs) {
 }
 
 /* ============================================
+   Monthly CC Bills Chart
+   ============================================ */
+
+function updateCCBillsChart() {
+  const container = document.getElementById('ccBillsChart');
+  const now = new Date();
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // Expand recurring up through the end of last month
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  const expanded = expandRecurring(transactions, endOfLastMonth);
+
+  // Sum raw credit card amounts per completed month (no brokerageAmount adjustment)
+  const byMonth = {};
+  for (const tx of expanded) {
+    if (tx.type !== 'expense' || tx.category !== 'Credit') continue;
+    const ym = tx.date.slice(0, 7);
+    if (ym >= currentYM) continue;
+    byMonth[ym] = (byMonth[ym] || 0) + tx.amount;
+  }
+
+  const months = Object.keys(byMonth).sort();
+  if (!months.length) {
+    container.innerHTML = '<p class="empty-msg">No completed months yet.</p>';
+    return;
+  }
+
+  const max = Math.max(...months.map(m => byMonth[m]));
+  const color = 'var(--expense)';
+
+  container.innerHTML = months.map(ym => {
+    const [y, mo] = ym.split('-');
+    const label = new Date(parseInt(y), parseInt(mo) - 1, 1)
+      .toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const amount = byMonth[ym];
+    const pct = max ? Math.round((amount / max) * 100) : 0;
+    return `
+      <div class="category-item">
+        <div class="category-item-header">
+          <span class="category-item-name">
+            <span class="category-dot" style="background:${color}"></span>
+            ${label}
+          </span>
+          <span class="category-item-amount" style="color:${color}">${fmt(amount)}</span>
+        </div>
+        <div class="category-bar-track">
+          <div class="category-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ============================================
    Flows Chart
    ============================================ */
 
@@ -602,6 +655,7 @@ function render() {
   updateCashFlowTable(expanded);
   updateCategoryBreakdown(periodTxs);
   updateFlowsChart(periodTxs);
+  updateCCBillsChart();
 }
 
 /* ============================================
