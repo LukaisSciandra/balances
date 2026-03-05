@@ -442,9 +442,9 @@ function updateFlowsChart(txs) {
 
   const max = Math.max(inflows, outflows, Math.abs(investment));
   const rows = [
-    { label: 'Inflows',    value: inflows,    color: 'var(--income)',  prefix: '+' },
-    { label: 'Outflows',   value: outflows,   color: 'var(--expense)', prefix: '-' },
-    { label: 'Investment', value: investment, color: '#6366f1',        prefix: '' },
+    { label: 'Inflows',    value: inflows,    barValue: inflows,              color: 'var(--income)',  prefix: '+' },
+    { label: 'Outflows',   value: outflows,   barValue: outflows,             color: 'var(--expense)', prefix: '-' },
+    { label: 'Investment', value: investment, barValue: Math.abs(investment), color: investment >= 0 ? 'var(--income)' : 'var(--expense)', prefix: '' },
   ];
 
   container.innerHTML = rows.map(r => `
@@ -457,7 +457,7 @@ function updateFlowsChart(txs) {
         <span class="category-item-amount" style="color:${r.color}">${r.prefix}${fmt(r.value)}</span>
       </div>
       <div class="category-bar-track">
-        <div class="category-bar-fill" style="width:${max ? Math.round((r.value / max) * 100) : 0}%;background:${r.color}"></div>
+        <div class="category-bar-fill" style="width:${max ? Math.round((r.barValue / max) * 100) : 0}%;background:${r.color}"></div>
       </div>
     </div>`).join('');
 }
