@@ -5,8 +5,8 @@
    ============================================ */
 
 const CATEGORIES = {
-  income:  ['Salary', 'Debit','Rent'],
-  expense: ['Debit', 'Investment','Rent'],
+  income:  ['Cash','Rent','Salary','Other'],
+  expense: ['Cash','Credit','Investment','Loans','Rent','Other'],
 };
 
 const CREDIT_CARDS = [
