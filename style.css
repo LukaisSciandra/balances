@@ -464,6 +464,7 @@ body {
   border: 1px solid var(--border);
 }
 .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-ghost.active { background: var(--primary-bg); color: var(--primary); border-color: var(--primary); }
 
 .btn-danger {
   background: var(--expense);

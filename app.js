@@ -31,10 +31,12 @@ const BALANCE_KEY  = 'cashflow_opening_balance';
 
 let transactions   = loadTransactions();
 let currentBalance = loadBalance();
-let editingId      = null;
-let pendingDeleteId = null;
-let ccMode         = false;
-let _cashFlowRows  = [];
+let editingId          = null;
+let editingSourceId    = null;   // set when editing a single recurring occurrence
+let editingSpecificDate = null;  // the occurrence date being overridden
+let pendingDeleteId    = null;
+let ccMode             = false;
+let _cashFlowRows      = [];
 
 /* ============================================
    Persistence
@@ -145,11 +147,15 @@ function expandRecurring(txs, endDate) {
       result.push(tx);
       continue;
     }
+    const excluded = new Set(tx.excludeDates || []);
     const txEnd = tx.recurringEnd ? new Date(tx.recurringEnd + 'T00:00:00') : null;
     const limit = txEnd && txEnd < endDate ? txEnd : endDate;
     let d = new Date(tx.date + 'T00:00:00');
     while (d <= limit) {
-      result.push({ ...tx, date: dateStr(d), id: tx.id + '_' + dateStr(d), _sourceId: tx.id });
+      const ds = dateStr(d);
+      if (!excluded.has(ds)) {
+        result.push({ ...tx, date: ds, id: tx.id + '_' + ds, _sourceId: tx.id });
+      }
       d = nextDate(d, tx.recurring);
     }
   }
@@ -497,7 +503,7 @@ function updateTable(txs) {
       </td>
       <td class="tx-amount ${row.type}">${row.type === 'income' ? '+' : '-'}${fmt(row.amount)}</td>
       <td class="tx-actions">
-        <button class="icon-btn" title="Edit" onclick="openEdit('${row._sourceId || row.id}')">
+        <button class="icon-btn" title="Edit" onclick="${row._sourceId ? `openEdit('${row._sourceId}','${row.date}')` : `openEdit('${row.id}')`}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -579,7 +585,10 @@ function render() {
   const expanded  = expandRecurring(transactions, cutoff);
   const periodTxs = filterByPeriod(expanded, period);
 
+  const hideRecurring = document.getElementById('toggleRecurring').classList.contains('active');
+
   let tableTxs = periodTxs;
+  if (hideRecurring)  tableTxs = tableTxs.filter(tx => !tx._sourceId);
   if (type !== 'all') tableTxs = tableTxs.filter(tx => tx.type === type);
   if (search) tableTxs = tableTxs.filter(tx =>
     tx.description.toLowerCase().includes(search) ||
@@ -606,7 +615,9 @@ function openModal() {
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
   resetForm();
-  editingId = null;
+  editingId           = null;
+  editingSourceId     = null;
+  editingSpecificDate = null;
 }
 
 function resetForm() {
@@ -623,7 +634,8 @@ function resetForm() {
   document.getElementById('descriptionGroup').hidden = false;
   document.getElementById('categoryGroup').hidden    = false;
   document.getElementById('cardPickerRow').style.order = '';
-  document.getElementById('brokerageRow').hidden = true;
+  document.getElementById('brokerageRow').hidden  = true;
+  document.getElementById('recurringGroup').hidden = false;
   updateRecurringEndVisibility();
 }
 
@@ -688,9 +700,50 @@ function updateCategoryOptions(type) {
   updateCardPickerVisibility();
 }
 
-window.openEdit = function(id) {
+window.openEdit = function(id, specificDate) {
   const tx = transactions.find(t => t.id === id);
   if (!tx) return;
+
+  if (specificDate && tx.recurring) {
+    // Editing one occurrence only — create an override, do not touch the source
+    editingId           = null;
+    editingSourceId     = id;
+    editingSpecificDate = specificDate;
+
+    if (tx.category === 'Credit') {
+      resetForm();
+      setType('expense');
+      const catSel = document.getElementById('txCategory');
+      catSel.innerHTML = '<option value="Credit">Credit</option>';
+      catSel.value = 'Credit';
+      setCCModeLayout(true);
+      document.getElementById('txCard').value        = tx.card || '';
+      document.getElementById('txDescription').value = tx.description;
+      document.getElementById('txAmount').value      = tx.amount;
+      document.getElementById('txDate').value        = specificDate;
+      document.getElementById('txNote').value        = tx.note || '';
+      document.getElementById('txBrokerage').value   = tx.brokerageAmount || '';
+      document.getElementById('brokerageRow').hidden = tx.card !== 'Robinhood';
+    } else {
+      setType(tx.type);
+      document.getElementById('txDescription').value = tx.description;
+      document.getElementById('txAmount').value      = tx.amount;
+      document.getElementById('txDate').value        = specificDate;
+      document.getElementById('txNote').value        = tx.note || '';
+      const catSel = document.getElementById('txCategory');
+      const opt = [...catSel.options].find(o => o.value === tx.category);
+      if (opt) catSel.value = tx.category;
+      updateCardPickerVisibility();
+    }
+    // Hide repeat field — this occurrence will be non-recurring
+    document.getElementById('txRecurring').value    = '';
+    document.getElementById('recurringGroup').hidden = true;
+    updateRecurringEndVisibility();
+    document.getElementById('modalTitle').textContent = 'Edit This Occurrence';
+    document.getElementById('submitBtn').textContent  = 'Save Occurrence';
+    openModal();
+    return;
+  }
 
   editingId = id;
   document.getElementById('editId').value = id;
@@ -830,7 +883,15 @@ document.getElementById('txForm').addEventListener('submit', e => {
 
   if (!tx.description || isNaN(tx.amount)) return;
 
-  if (editingId) {
+  if (editingSourceId) {
+    // Single-occurrence override: exclude that date from the recurring series,
+    // then insert a standalone (non-recurring) transaction for the edited data.
+    const src = transactions.find(t => t.id === editingSourceId);
+    if (src) src.excludeDates = [...(src.excludeDates || []), editingSpecificDate];
+    transactions.push({ ...tx, id: uid(), recurring: null, recurringEnd: null });
+    editingSourceId     = null;
+    editingSpecificDate = null;
+  } else if (editingId) {
     const idx = transactions.findIndex(t => t.id === editingId);
     if (idx !== -1) transactions[idx] = tx;
   } else {
@@ -926,6 +987,11 @@ document.getElementById('txCard').addEventListener('change', () => {
 // Filters
 ['periodFilter', 'typeFilter', 'searchInput'].forEach(id => {
   document.getElementById(id).addEventListener('input', render);
+});
+
+document.getElementById('toggleRecurring').addEventListener('click', () => {
+  document.getElementById('toggleRecurring').classList.toggle('active');
+  render();
 });
 
 document.getElementById('periodFilter').addEventListener('input', () => {

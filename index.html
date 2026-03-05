@@ -75,6 +75,7 @@
               <option value="income">Income</option>
               <option value="expense">Expense</option>
             </select>
+            <button type="button" id="toggleRecurring" class="btn btn-ghost">↻ Recurring</button>
           </div>
         </div>
         <div class="table-wrapper">
@@ -243,7 +244,7 @@
             <label for="txNote">Note (optional)</label>
             <input type="text" id="txNote" class="text-input" placeholder="Additional details..." />
           </div>
-          <div class="form-group">
+          <div class="form-group" id="recurringGroup">
             <label for="txRecurring">Repeat</label>
             <select id="txRecurring" class="select-input">
               <option value="">Does not repeat</option>
