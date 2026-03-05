@@ -278,24 +278,42 @@ function updateCashFlowTable(expanded) {
   displayEl.textContent = fmt(currentBalance);
   displayEl.className   = 'current-balance-value' + (currentBalance < 0 ? ' expense' : '');
 
-  // Walk all expanded transactions in chronological order to compute running balance
+  // Anchor on currentBalance: project future transactions forward and past transactions backward.
+  // This ensures editing a past transaction never distorts future projected balances.
+  const todayStr = today();
   const sorted = [...expanded].sort((a, b) => a.date.localeCompare(b.date));
-
-  let balance = currentBalance;
   const dateMap = new Map();
 
+  // Future dates (after today): walk forward from currentBalance
+  let bal = currentBalance;
   for (const tx of sorted) {
+    if (tx.date <= todayStr) continue;
     const net = tx.amount - (tx.brokerageAmount || 0);
-    if (tx.type === 'income') balance += net;
-    else                      balance -= net;
+    if (tx.type === 'income') bal += net;
+    else                      bal -= net;
+    if (!dateMap.has(tx.date)) dateMap.set(tx.date, { inflow: 0, outflow: 0, balance: 0 });
+    const e = dateMap.get(tx.date);
+    if (tx.type === 'income') e.inflow  += net;
+    else                      e.outflow += net;
+    e.balance = bal;
+  }
 
-    if (!dateMap.has(tx.date)) {
-      dateMap.set(tx.date, { inflow: 0, outflow: 0, balance: 0 });
-    }
-    const entry = dateMap.get(tx.date);
-    if (tx.type === 'income') entry.inflow  += net;
-    else                      entry.outflow += net;
-    entry.balance = balance;
+  // Past dates (today and before): group by date then walk backward from currentBalance.
+  // Balance shown at date D = currentBalance minus the cumulative net of everything after D.
+  const pastByDate = new Map();
+  for (const tx of sorted) {
+    if (tx.date > todayStr) continue;
+    if (!pastByDate.has(tx.date)) pastByDate.set(tx.date, { inflow: 0, outflow: 0 });
+    const e = pastByDate.get(tx.date);
+    const net = tx.amount - (tx.brokerageAmount || 0);
+    if (tx.type === 'income') e.inflow  += net;
+    else                      e.outflow += net;
+  }
+  bal = currentBalance;
+  for (const date of [...pastByDate.keys()].sort().reverse()) {
+    const e = pastByDate.get(date);
+    dateMap.set(date, { inflow: e.inflow, outflow: e.outflow, balance: bal });
+    bal -= (e.inflow - e.outflow);
   }
 
   // Filter to only dates within the selected period
@@ -314,7 +332,6 @@ function updateCashFlowTable(expanded) {
   }
 
   // Always inject a "Current" row for today if today falls within the period
-  const todayStr = today();
   const todayDate = new Date(todayStr + 'T00:00:00');
   const todayInRange = !range || (todayDate >= range.start && todayDate <= range.end);
   if (todayInRange) {
