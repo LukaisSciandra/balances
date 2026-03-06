@@ -190,6 +190,12 @@ function getPeriodRange(period) {
       end:   new Date(y, m, 0),
     };
   }
+  if (period === 'ytd') {
+    return {
+      start: new Date(y, 0, 1),
+      end:   new Date(),
+    };
+  }
   if (period === 'thisYear') {
     return {
       start: new Date(y, 0, 1),
