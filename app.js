@@ -283,11 +283,14 @@ function updateCashFlowTable(expanded) {
   const pastByDate = new Map();
   for (const tx of sorted) {
     if (tx.date > todayStr) continue;
-    if (!pastByDate.has(tx.date)) pastByDate.set(tx.date, { inflow: 0, outflow: 0 });
+    if (!pastByDate.has(tx.date)) pastByDate.set(tx.date, { inflow: 0, outflow: 0, investOutflow: 0 });
     const e = pastByDate.get(tx.date);
     const net = tx.amount - (tx.brokerageAmount || 0);
     if (tx.type === 'income') e.inflow  += net;
-    else                      e.outflow += net;
+    else {
+      e.outflow += net;
+      if (tx.category === 'Investment') e.investOutflow += net;
+    }
   }
   let pastNets = 0;
   for (const [, e] of pastByDate) pastNets += (e.inflow - e.outflow);
@@ -303,7 +306,7 @@ function updateCashFlowTable(expanded) {
   let bal = computedCurrentBalance;
   for (const date of [...pastByDate.keys()].sort().reverse()) {
     const e = pastByDate.get(date);
-    dateMap.set(date, { inflow: e.inflow, outflow: e.outflow, balance: bal });
+    dateMap.set(date, { inflow: e.inflow, outflow: e.outflow, investOutflow: e.investOutflow, balance: bal });
     bal -= (e.inflow - e.outflow);
   }
 
@@ -314,10 +317,13 @@ function updateCashFlowTable(expanded) {
     const net = tx.amount - (tx.brokerageAmount || 0);
     if (tx.type === 'income') bal += net;
     else                      bal -= net;
-    if (!dateMap.has(tx.date)) dateMap.set(tx.date, { inflow: 0, outflow: 0, balance: 0 });
+    if (!dateMap.has(tx.date)) dateMap.set(tx.date, { inflow: 0, outflow: 0, investOutflow: 0, balance: 0 });
     const e = dateMap.get(tx.date);
     if (tx.type === 'income') e.inflow  += net;
-    else                      e.outflow += net;
+    else {
+      e.outflow += net;
+      if (tx.category === 'Investment') e.investOutflow += net;
+    }
     e.balance = bal;
   }
 
@@ -384,7 +390,7 @@ function updateCashFlowTable(expanded) {
       <tr>
         <td class="tx-date">${fmtDate(r.date)}</td>
         <td class="text-right tx-amount income">${r.inflow  ? '+' + fmt(r.inflow)  : '<span style="color:var(--text-muted)">—</span>'}</td>
-        <td class="text-right tx-amount expense">${r.outflow ? '-' + fmt(r.outflow) : '<span style="color:var(--text-muted)">—</span>'}</td>
+        <td class="text-right tx-amount ${r.outflow && r.outflow === r.investOutflow ? 'income' : 'expense'}">${r.outflow ? '-' + fmt(r.outflow) : '<span style="color:var(--text-muted)">—</span>'}</td>
         <td class="text-right tx-amount ${r.balance >= 0 ? '' : 'expense'}">${fmt(r.balance)}</td>
       </tr>`;
   }).join('');
