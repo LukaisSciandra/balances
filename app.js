@@ -29,8 +29,9 @@ const BALANCE_KEY  = 'cashflow_opening_balance';
    State
    ============================================ */
 
-let transactions   = loadTransactions();
-let currentBalance = loadBalance();
+let transactions        = loadTransactions();
+let currentBalance      = loadBalance();  // stored opening balance
+let computedCurrentBalance = currentBalance; // opening + all past tx nets; updated each render
 let editingId          = null;
 let editingSourceId    = null;   // set when editing a single recurring occurrence
 let editingSpecificDate = null;  // the occurrence date being overridden
@@ -273,19 +274,41 @@ function updateCashFlowTable(expanded) {
   const range  = getPeriodRange(period);
   const tbody  = document.getElementById('cashflowDateBody');
 
-  // Reflect current balance in the header display
-  const displayEl = document.getElementById('currentBalanceDisplay');
-  displayEl.textContent = fmt(currentBalance);
-  displayEl.className   = 'current-balance-value' + (currentBalance < 0 ? ' expense' : '');
-
-  // Anchor on currentBalance: project future transactions forward and past transactions backward.
-  // This ensures editing a past transaction never distorts future projected balances.
   const todayStr = today();
   const sorted = [...expanded].sort((a, b) => a.date.localeCompare(b.date));
   const dateMap = new Map();
 
-  // Future dates (after today): walk forward from currentBalance
-  let bal = currentBalance;
+  // Group past transactions by date and sum their nets.
+  // computedCurrentBalance = stored opening balance + all past transaction nets.
+  const pastByDate = new Map();
+  for (const tx of sorted) {
+    if (tx.date > todayStr) continue;
+    if (!pastByDate.has(tx.date)) pastByDate.set(tx.date, { inflow: 0, outflow: 0 });
+    const e = pastByDate.get(tx.date);
+    const net = tx.amount - (tx.brokerageAmount || 0);
+    if (tx.type === 'income') e.inflow  += net;
+    else                      e.outflow += net;
+  }
+  let pastNets = 0;
+  for (const [, e] of pastByDate) pastNets += (e.inflow - e.outflow);
+  computedCurrentBalance = currentBalance + pastNets;
+
+  // Reflect computed balance in the header display
+  const displayEl = document.getElementById('currentBalanceDisplay');
+  displayEl.textContent = fmt(computedCurrentBalance);
+  displayEl.className   = 'current-balance-value' + (computedCurrentBalance < 0 ? ' expense' : '');
+
+  // Past dates: walk backward from computedCurrentBalance.
+  // Balance at date D = computedCurrentBalance − sum of nets from D+1 through today.
+  let bal = computedCurrentBalance;
+  for (const date of [...pastByDate.keys()].sort().reverse()) {
+    const e = pastByDate.get(date);
+    dateMap.set(date, { inflow: e.inflow, outflow: e.outflow, balance: bal });
+    bal -= (e.inflow - e.outflow);
+  }
+
+  // Future dates: project forward from computedCurrentBalance.
+  bal = computedCurrentBalance;
   for (const tx of sorted) {
     if (tx.date <= todayStr) continue;
     const net = tx.amount - (tx.brokerageAmount || 0);
@@ -296,24 +319,6 @@ function updateCashFlowTable(expanded) {
     if (tx.type === 'income') e.inflow  += net;
     else                      e.outflow += net;
     e.balance = bal;
-  }
-
-  // Past dates (today and before): group by date then walk backward from currentBalance.
-  // Balance shown at date D = currentBalance minus the cumulative net of everything after D.
-  const pastByDate = new Map();
-  for (const tx of sorted) {
-    if (tx.date > todayStr) continue;
-    if (!pastByDate.has(tx.date)) pastByDate.set(tx.date, { inflow: 0, outflow: 0 });
-    const e = pastByDate.get(tx.date);
-    const net = tx.amount - (tx.brokerageAmount || 0);
-    if (tx.type === 'income') e.inflow  += net;
-    else                      e.outflow += net;
-  }
-  bal = currentBalance;
-  for (const date of [...pastByDate.keys()].sort().reverse()) {
-    const e = pastByDate.get(date);
-    dateMap.set(date, { inflow: e.inflow, outflow: e.outflow, balance: bal });
-    bal -= (e.inflow - e.outflow);
   }
 
   // Filter to only dates within the selected period
@@ -335,7 +340,7 @@ function updateCashFlowTable(expanded) {
   const todayDate = new Date(todayStr + 'T00:00:00');
   const todayInRange = !range || (todayDate >= range.start && todayDate <= range.end);
   if (todayInRange) {
-    rows.push({ date: todayStr, inflow: 0, outflow: 0, balance: currentBalance, isCurrent: true });
+    rows.push({ date: todayStr, inflow: 0, outflow: 0, balance: computedCurrentBalance, isCurrent: true });
   }
 
   if (!rows.length) {
@@ -909,13 +914,18 @@ function openEditBalance() {
   document.getElementById('currentBalanceDisplay').hidden = true;
   document.getElementById('editBalanceBtn').hidden        = true;
   document.getElementById('currentBalanceForm').hidden    = false;
-  document.getElementById('currentBalanceInput').value   = currentBalance;
+  document.getElementById('currentBalanceInput').value   = computedCurrentBalance;
   document.getElementById('currentBalanceInput').select();
 }
 
 function confirmEditBalance() {
   const val = parseFloat(document.getElementById('currentBalanceInput').value);
-  if (!isNaN(val)) saveBalance(val);
+  if (!isNaN(val)) {
+    // Store as opening balance so that computed (opening + pastNets) equals what the user typed.
+    // opening = val − pastNets  →  computed = val − pastNets + pastNets = val
+    const pastNets = computedCurrentBalance - currentBalance;
+    saveBalance(val - pastNets);
+  }
   closeEditBalance();
   render();
 }
@@ -1132,6 +1142,25 @@ document.getElementById('importBtn').addEventListener('click', () => {
    ============================================ */
 
 document.getElementById('txDate').value = today();
+
+// One-time migration: old model stored the actual current balance directly.
+// New model stores an opening balance; displayed = opening + past tx nets.
+// Adjust: new opening = old actual − pastNets, so the displayed value is unchanged.
+const BALANCE_MIGRATED_KEY = 'cashflow_balance_migrated_v2';
+if (!localStorage.getItem(BALANCE_MIGRATED_KEY)) {
+  const migExpanded = expandRecurring(transactions, new Date());
+  const migToday    = today();
+  let migPastNets   = 0;
+  for (const tx of migExpanded) {
+    if (tx.date > migToday) continue;
+    const net = tx.amount - (tx.brokerageAmount || 0);
+    if (tx.type === 'income') migPastNets += net;
+    else                      migPastNets -= net;
+  }
+  currentBalance -= migPastNets;
+  try { localStorage.setItem(BALANCE_KEY, String(currentBalance)); } catch {}
+  try { localStorage.setItem(BALANCE_MIGRATED_KEY, '1'); } catch {}
+}
 
 // Populate credit card picker
 const cardSel = document.getElementById('txCard');
