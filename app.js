@@ -886,7 +886,8 @@ window.openDelete = function(id) {
    ============================================ */
 
 function openInvestModal() {
-  const balanceRows = _cashFlowRows.filter(r => !r.isPlaceholder);
+  const todayStr = today();
+  const balanceRows = _cashFlowRows.filter(r => !r.isPlaceholder && r.date >= todayStr);
   if (!balanceRows.length) return;
 
   const minRow = balanceRows.reduce((min, r) => r.balance < min.balance ? r : min, balanceRows[0]);
