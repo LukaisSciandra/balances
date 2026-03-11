@@ -65,9 +65,14 @@
       </section>
 
       <!-- Transactions List -->
-      <section class="card transactions-card">
-        <div class="transactions-header">
-          <h2 class="card-title">Transactions</h2>
+      <section class="card transactions-card collapsed" id="transactionsSection">
+        <div class="transactions-header" id="transactionsToggle">
+          <div class="section-title-row">
+            <button class="collapse-toggle" aria-label="Expand Transactions">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <h2 class="card-title">Transactions</h2>
+          </div>
           <div class="filters">
             <input type="text" id="searchInput" class="text-input" placeholder="Search..." />
             <select id="typeFilter" class="select-input">
@@ -75,7 +80,7 @@
               <option value="income">Income</option>
               <option value="expense">Expense</option>
             </select>
-            <button type="button" id="toggleRecurring" class="btn btn-ghost">↻ Recurring</button>
+            <button type="button" id="toggleRecurring" class="btn btn-ghost active">↻ Recurring</button>
           </div>
         </div>
         <div class="table-wrapper">
@@ -98,9 +103,14 @@
       </section>
 
       <!-- Recurring Transactions -->
-      <section class="card transactions-card" id="recurringSection">
-        <div class="transactions-header">
-          <h2 class="card-title">Recurring</h2>
+      <section class="card transactions-card collapsed" id="recurringSection">
+        <div class="transactions-header" id="recurringToggle">
+          <div class="section-title-row">
+            <button class="collapse-toggle" aria-label="Expand Recurring">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <h2 class="card-title">Recurring</h2>
+          </div>
         </div>
         <div class="table-wrapper">
           <table class="tx-table">

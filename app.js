@@ -1088,6 +1088,15 @@ document.getElementById('toggleRecurring').addEventListener('click', () => {
   render();
 });
 
+document.getElementById('transactionsToggle').addEventListener('click', e => {
+  if (e.target.closest('#toggleRecurring') || e.target.closest('input') || e.target.closest('select')) return;
+  document.getElementById('transactionsSection').classList.toggle('collapsed');
+});
+
+document.getElementById('recurringToggle').addEventListener('click', () => {
+  document.getElementById('recurringSection').classList.toggle('collapsed');
+});
+
 document.getElementById('periodFilter').addEventListener('input', () => {
   document.getElementById('customDateRange').hidden =
     document.getElementById('periodFilter').value !== 'custom';

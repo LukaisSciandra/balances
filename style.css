@@ -279,6 +279,36 @@ body {
   margin: 0;
 }
 
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapse-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+.collapse-toggle:hover { color: var(--text); }
+.collapse-toggle svg { transition: transform 0.2s; }
+
+.transactions-card.collapsed .collapse-toggle svg {
+  transform: rotate(-90deg);
+}
+.transactions-card.collapsed .table-wrapper {
+  display: none;
+}
+.transactions-card.collapsed .transactions-header {
+  border-bottom: none;
+}
+
 .filters {
   display: flex;
   align-items: center;
