@@ -5,7 +5,7 @@
    ============================================ */
 
 const CATEGORIES = {
-  income:  ['Cash','Rent','Salary','Other'],
+  income:  ['Cash','Rent','Salary','Investment','Other'],
   expense: ['Cash','Credit','Investment','Loans','Rent','Other'],
 };
 
