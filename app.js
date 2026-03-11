@@ -900,9 +900,7 @@ function openInvestModal() {
 
   if (investable <= 0) {
     document.getElementById('investContent').innerHTML = `
-      <div class="invest-amount negative">${fmt(floor)}</div>
-      <p class="invest-date">Projected floor</p>
-      <p class="invest-note">Balance is projected to stay within $100 — no safe investment opportunity in this period.</p>
+      <p class="invest-note" style="margin-top:12px">No investment opportunity — balance is projected to stay at or below $100 in this period.</p>
     `;
     document.getElementById('investOverlay').classList.add('open');
     return;
