@@ -890,14 +890,35 @@ function openInvestModal() {
   const balanceRows = _cashFlowRows.filter(r => !r.isPlaceholder && r.date >= todayStr);
   if (!balanceRows.length) return;
 
-  const minRow = balanceRows.reduce((min, r) => r.balance < min.balance ? r : min, balanceRows[0]);
+  // Compute floor from future transaction rows (excluding the synthetic "today" row)
+  // so a low current balance doesn't mask a future safe withdrawal window.
+  const futureRows = balanceRows.filter(r => !r.isCurrent);
+  const floorRows  = futureRows.length ? futureRows : balanceRows;
+  const minRow     = floorRows.reduce((min, r) => r.balance < min.balance ? r : min, floorRows[0]);
+  const floor      = minRow.balance;
+  const investable = floor - 100;
+
+  if (investable <= 0) {
+    document.getElementById('investContent').innerHTML = `
+      <div class="invest-amount negative">${fmt(floor)}</div>
+      <p class="invest-date">Projected floor</p>
+      <p class="invest-note">Balance is projected to stay within $100 — no safe investment opportunity in this period.</p>
+    `;
+    document.getElementById('investOverlay').classList.add('open');
+    return;
+  }
+
+  // Earliest date (from today forward, sorted chronologically) where balance >= floor,
+  // meaning a withdrawal of `investable` can be made without the future balance dropping below $100.
+  const sorted      = [...balanceRows].sort((a, b) => a.date.localeCompare(b.date));
+  const earliestRow = sorted.find(r => r.balance >= floor);
+  const earliestStr = earliestRow ? earliestRow.date : sorted[0].date;
+  const dateLabel   = earliestStr === todayStr ? 'Available now' : `Available from ${fmtDate(earliestStr)}`;
+
   const pendingAfter = _cashFlowRows.filter(r => r.isPlaceholder && r.date > minRow.date);
-
-  const dateLabel = minRow.isCurrent ? 'Current balance' : `Lowest on ${fmtDate(minRow.date)}`;
-
-  const pendingHtml = pendingAfter.length ? `
+  const pendingHtml  = pendingAfter.length ? `
     <div class="invest-pending">
-      <p class="invest-pending-title">Pending payments after this date</p>
+      <p class="invest-pending-title">Pending payments after floor date</p>
       ${pendingAfter.map(p => `
         <div class="invest-pending-item">
           <span>${fmtDate(p.date)}</span>
@@ -905,12 +926,10 @@ function openInvestModal() {
         </div>`).join('')}
     </div>` : '';
 
-  const noteText = pendingAfter.length
-    ? 'Projected floor for this period. Pending payments below are not yet reflected in this figure.'
-    : 'Projected floor for this period — a safe upper bound for what can be invested without overdrafting.';
+  const noteText = `Investable while keeping a $100 floor. Balance reaches its projected minimum of ${fmt(floor)} on ${fmtDate(minRow.date)}.`;
 
   document.getElementById('investContent').innerHTML = `
-    <div class="invest-amount${minRow.balance < 0 ? ' negative' : ''}">${fmt(minRow.balance)}</div>
+    <div class="invest-amount">${fmt(investable)}</div>
     <p class="invest-date">${dateLabel}</p>
     <p class="invest-note">${noteText}</p>
     ${pendingHtml}
