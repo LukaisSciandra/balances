@@ -513,7 +513,7 @@ function updateFlowsChart(txs) {
   let inflows = 0, outflows = 0, investment = 0;
   for (const tx of txs) {
     if (tx.category === 'Investment') {
-      investment += tx.amount;
+      investment += tx.type === 'income' ? -tx.amount : tx.amount;
     } else if (tx.type === 'income') {
       inflows += tx.amount;
     } else {
