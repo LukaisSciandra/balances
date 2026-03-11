@@ -459,16 +459,27 @@ function updateCCBillsChart() {
   const now = new Date();
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  // Expand recurring up through the end of last month
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-  const expanded = expandRecurring(transactions, endOfLastMonth);
+  // Determine whether the current month can be included: no CC due dates this month
+  // are both unpaid and still in the future (i.e. all pending ones are accounted for).
+  const currentMonthRange = {
+    start: new Date(now.getFullYear(), now.getMonth(), 1),
+    end:   new Date(now.getFullYear(), now.getMonth() + 1, 0),
+  };
+  const pendingThisMonth   = getCreditCardPlaceholders(currentMonthRange).filter(p => p.date.startsWith(currentYM));
+  const includeCurrentMonth = pendingThisMonth.length === 0;
 
-  // Sum raw credit card amounts per completed month (no brokerageAmount adjustment)
+  const cutoff  = includeCurrentMonth
+    ? new Date(now.getFullYear(), now.getMonth() + 1, 0)  // end of current month
+    : new Date(now.getFullYear(), now.getMonth(), 0);      // end of last month
+  const expanded = expandRecurring(transactions, cutoff);
+
+  // Sum raw credit card amounts per included month
   const byMonth = {};
   for (const tx of expanded) {
     if (tx.type !== 'expense' || tx.category !== 'Credit') continue;
     const ym = tx.date.slice(0, 7);
-    if (ym >= currentYM) continue;
+    if (ym > currentYM) continue;
+    if (!includeCurrentMonth && ym >= currentYM) continue;
     byMonth[ym] = (byMonth[ym] || 0) + tx.amount;
   }
 
@@ -478,21 +489,22 @@ function updateCCBillsChart() {
     return;
   }
 
-  const max = Math.max(...months.map(m => byMonth[m]));
+  const max   = Math.max(...months.map(m => byMonth[m]));
   const color = 'var(--expense)';
 
   container.innerHTML = months.map(ym => {
     const [y, mo] = ym.split('-');
     const label = new Date(parseInt(y), parseInt(mo) - 1, 1)
       .toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    const amount = byMonth[ym];
-    const pct = max ? Math.round((amount / max) * 100) : 0;
+    const amount  = byMonth[ym];
+    const pct     = max ? Math.round((amount / max) * 100) : 0;
+    const isCurr  = ym === currentYM;
     return `
       <div class="category-item">
         <div class="category-item-header">
           <span class="category-item-name">
             <span class="category-dot" style="background:${color}"></span>
-            ${label}
+            ${label}${isCurr ? ' <span style="font-size:11px;color:var(--text-muted)">(current)</span>' : ''}
           </span>
           <span class="category-item-amount" style="color:${color}">${fmt(amount)}</span>
         </div>
