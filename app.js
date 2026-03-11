@@ -890,15 +890,19 @@ function openInvestModal() {
   const balanceRows = _cashFlowRows.filter(r => !r.isPlaceholder && r.date >= todayStr);
   if (!balanceRows.length) return;
 
-  // Compute floor from future transaction rows (excluding the synthetic "today" row)
-  // so a low current balance doesn't mask a future safe withdrawal window.
-  const futureRows = balanceRows.filter(r => !r.isCurrent);
-  const floorRows  = futureRows.length ? futureRows : balanceRows;
-  const minRow     = floorRows.reduce((min, r) => r.balance < min.balance ? r : min, floorRows[0]);
-  const floor      = minRow.balance;
-  const investable = floor - 100;
+  // Sort chronologically and compute suffix minimum (min balance from each index to the end).
+  // suffixMin[i] answers: "if I invest on day i, what is the lowest my balance will ever reach?"
+  const sorted = [...balanceRows].sort((a, b) => a.date.localeCompare(b.date));
+  const suffixMin = new Array(sorted.length);
+  suffixMin[sorted.length - 1] = sorted[sorted.length - 1].balance;
+  for (let i = sorted.length - 2; i >= 0; i--) {
+    suffixMin[i] = Math.min(sorted[i].balance, suffixMin[i + 1]);
+  }
 
-  if (investable <= 0) {
+  // Find the earliest date where investing is safe: suffix min stays above $100 after withdrawal.
+  const oppIdx = sorted.findIndex((_, i) => suffixMin[i] > 100);
+
+  if (oppIdx === -1) {
     document.getElementById('investContent').innerHTML = `
       <p class="invest-note" style="margin-top:12px">No investment opportunity — balance is projected to stay at or below $100 in this period.</p>
     `;
@@ -906,13 +910,13 @@ function openInvestModal() {
     return;
   }
 
-  // Earliest date (from today forward, sorted chronologically) where balance >= floor,
-  // meaning a withdrawal of `investable` can be made without the future balance dropping below $100.
-  const sorted      = [...balanceRows].sort((a, b) => a.date.localeCompare(b.date));
-  const earliestRow = sorted.find(r => r.balance >= floor);
-  const earliestStr = earliestRow ? earliestRow.date : sorted[0].date;
-  const dateLabel   = earliestStr === todayStr ? 'Available now' : `Available from ${fmtDate(earliestStr)}`;
+  const opportunityRow = sorted[oppIdx];
+  const floor          = suffixMin[oppIdx];
+  const investable     = floor - 100;
+  const dateLabel      = opportunityRow.date === todayStr ? 'Available now' : `Available from ${fmtDate(opportunityRow.date)}`;
 
+  // The constraining row is the one that hits the floor on or after the opportunity date.
+  const minRow       = sorted.slice(oppIdx).reduce((min, r) => r.balance < min.balance ? r : min, sorted[oppIdx]);
   const pendingAfter = _cashFlowRows.filter(r => r.isPlaceholder && r.date > minRow.date);
   const pendingHtml  = pendingAfter.length ? `
     <div class="invest-pending">
@@ -924,12 +928,10 @@ function openInvestModal() {
         </div>`).join('')}
     </div>` : '';
 
-  const noteText = `Investable while keeping a $100 floor. Balance reaches its projected minimum of ${fmt(floor)} on ${fmtDate(minRow.date)}.`;
-
   document.getElementById('investContent').innerHTML = `
     <div class="invest-amount">${fmt(investable)}</div>
     <p class="invest-date">${dateLabel}</p>
-    <p class="invest-note">${noteText}</p>
+    <p class="invest-note">Investable while keeping a $100 floor. Balance reaches its projected minimum of ${fmt(floor)} on ${fmtDate(minRow.date)}.</p>
     ${pendingHtml}
   `;
 
