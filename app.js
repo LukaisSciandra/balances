@@ -14,6 +14,8 @@ const CREDIT_CARDS = [
   { name: 'Amex',      day: 9  },
   { name: 'Robinhood', day: 28 },
   { name: 'Amazon',    day: 5  },
+  { name: 'Citi',      day: 15 },
+  { name: 'Chase',     day: 18 },
 ];
 
 const CATEGORY_COLORS = [
