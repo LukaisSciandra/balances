@@ -26,13 +26,15 @@ const CATEGORY_COLORS = [
 
 const STORAGE_KEY = 'cashflow_transactions';
 const BALANCE_KEY  = 'cashflow_opening_balance';
+const CARDS_KEY    = 'cashflow_disabled_cards';
 
 /* ============================================
    State
    ============================================ */
 
 let transactions        = loadTransactions();
-let currentBalance      = loadBalance();  // stored opening balance
+let currentBalance      = loadBalance();
+let disabledCards       = loadDisabledCards();  // stored opening balance
 let computedCurrentBalance = currentBalance; // opening + all past tx nets; updated each render
 let editingId          = null;
 let editingSourceId    = null;   // set when editing a single recurring occurrence
@@ -69,6 +71,17 @@ function loadBalance() {
 function saveBalance(amount) {
   currentBalance = amount;
   localStorage.setItem(BALANCE_KEY, String(amount));
+}
+
+function loadDisabledCards() {
+  try {
+    const raw = localStorage.getItem(CARDS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+
+function saveDisabledCards() {
+  localStorage.setItem(CARDS_KEY, JSON.stringify([...disabledCards]));
 }
 
 function getDefaultTransactions() {
@@ -256,6 +269,7 @@ function getCreditCardPlaceholders(range) {
   if (!range) return [];
   const result = [];
   for (const card of CREDIT_CARDS) {
+    if (disabledCards.has(card.name)) continue;
     let d = new Date(range.start.getFullYear(), range.start.getMonth(), card.day);
     if (d < range.start) d = new Date(range.start.getFullYear(), range.start.getMonth() + 1, card.day);
     while (d <= range.end) {
@@ -451,6 +465,48 @@ function updateCategoryBreakdown(txs) {
       </div>`;
   }).join('');
 }
+
+/* ============================================
+   Credit Cards Section
+   ============================================ */
+
+function updateCreditCardsSection() {
+  const container = document.getElementById('creditCardsList');
+  const now = new Date();
+
+  container.innerHTML = CREDIT_CARDS.map(card => {
+    const enabled  = !disabledCards.has(card.name);
+    const due      = new Date(now.getFullYear(), now.getMonth(), card.day);
+    if (due < now) due.setMonth(due.getMonth() + 1);
+    const dueLabel = due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `
+      <div class="cc-card-item">
+        <div class="cc-card-info">
+          <span class="cc-card-name">${escHtml(card.name)}</span>
+          <span class="cc-card-due">Due ${dueLabel}</span>
+        </div>
+        <button class="cc-card-toggle btn btn-ghost${enabled ? ' active' : ''}"
+                data-card="${escHtml(card.name)}"
+                title="${enabled ? 'Disable pending placeholder' : 'Enable pending placeholder'}">
+          ${enabled ? 'Pending on' : 'Pending off'}
+        </button>
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('creditCardsList').addEventListener('click', e => {
+  const btn = e.target.closest('.cc-card-toggle');
+  if (!btn) return;
+  const name = btn.dataset.card;
+  if (disabledCards.has(name)) {
+    disabledCards.delete(name);
+  } else {
+    disabledCards.add(name);
+  }
+  saveDisabledCards();
+  updateCreditCardsSection();
+  render();
+});
 
 /* ============================================
    Monthly CC Bills Chart
@@ -703,6 +759,7 @@ function render() {
   updateCashFlowTable(expanded);
   updateCategoryBreakdown(periodTxs);
   updateFlowsChart(periodTxs);
+  updateCreditCardsSection();
   updateCCBillsChart();
 }
 

@@ -879,6 +879,41 @@ body {
 }
 
 /* ============================================
+   Credit Cards Section
+   ============================================ */
+
+.cc-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cc-card-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cc-card-item:last-child { border-bottom: none; }
+
+.cc-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cc-card-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cc-card-due {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ============================================
    Scrollbar
    ============================================ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
