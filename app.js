@@ -195,8 +195,8 @@ function getPeriodRange(period) {
   }
   if (period === 'twoMonth') {
     return {
-      start: new Date(y, m, 1),
-      end:   new Date(y, m + 2, 0),
+      start: now,
+      end:   new Date(y, m + 2, now.getDate() - 1),
     };
   }
   if (period === 'lastMonth') {
