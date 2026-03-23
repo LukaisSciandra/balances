@@ -364,9 +364,12 @@ function updateCashFlowTable(expanded) {
     rows.push(ph);
   }
 
-  // Always inject a "Current" row for today if today falls within the period
+  // Always inject a "Current" row for today if today falls within the period.
+  // Compare at day granularity (strip time) so periods starting mid-day still include today.
   const todayDate = new Date(todayStr + 'T00:00:00');
-  const todayInRange = !range || (todayDate >= range.start && todayDate <= range.end);
+  const rangeStartDay = range ? new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()) : null;
+  const rangeEndDay   = range ? new Date(range.end.getFullYear(),   range.end.getMonth(),   range.end.getDate())   : null;
+  const todayInRange  = !range || (todayDate >= rangeStartDay && todayDate <= rangeEndDay);
   if (todayInRange) {
     rows.push({ date: todayStr, inflow: 0, outflow: 0, balance: computedCurrentBalance, isCurrent: true });
   }
