@@ -958,7 +958,14 @@ window.openDelete = function(id) {
 
 function openInvestModal() {
   const todayStr = today();
-  const balanceRows = _cashFlowRows.filter(r => !r.isPlaceholder && r.date >= todayStr);
+  let balanceRows = _cashFlowRows.filter(r => !r.isPlaceholder && r.date >= todayStr);
+
+  // Always ensure today is represented so the opportunity can be "now" even when
+  // the current period filter excludes today's midnight rows (e.g. 2-month starts
+  // at the current clock time, not midnight).
+  if (!balanceRows.some(r => r.date === todayStr)) {
+    balanceRows = [{ date: todayStr, balance: computedCurrentBalance }, ...balanceRows];
+  }
   if (!balanceRows.length) return;
 
   // Sort chronologically and compute suffix minimum (min balance from each index to the end).
