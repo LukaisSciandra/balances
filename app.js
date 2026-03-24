@@ -1221,7 +1221,7 @@ document.addEventListener('keydown', e => {
    ============================================ */
 
 function exportData() {
-  const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), balance: currentBalance, transactions }, null, 2);
+  const payload = JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), balance: currentBalance, transactions, disabledCards: [...disabledCards] }, null, 2);
   const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;
@@ -1239,6 +1239,10 @@ function importData(file) {
       transactions = data.transactions;
       saveTransactions();
       if (typeof data.balance === 'number') saveBalance(data.balance);
+      if (Array.isArray(data.disabledCards)) {
+        disabledCards = new Set(data.disabledCards);
+        saveDisabledCards();
+      }
       render();
     } catch {
       alert('Import failed: the selected file is not a valid CashFlow backup.');
