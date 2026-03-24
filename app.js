@@ -661,7 +661,7 @@ function updateTable(txs) {
         ${row.recurring ? `<span class="badge badge-recurring" title="${escHtml(row.recurring)}">↻</span>` : ''}
         ${row.note ? `<span class="tx-note">${escHtml(row.note)}</span>` : ''}
       </td>
-      <td class="tx-amount ${row.type}">${row.type === 'income' ? '+' : '-'}${fmt(row.amount)}</td>
+      <td class="tx-amount ${row.type === 'expense' && row.category === 'Investment' ? 'income' : row.type}">${row.type === 'income' ? '+' : '-'}${fmt(row.amount)}</td>
       <td class="tx-actions">
         <button class="icon-btn" title="Edit" onclick="${row._sourceId ? `openEdit('${row._sourceId}','${row.date}')` : `openEdit('${row.id}')`}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -736,11 +736,12 @@ function updateRecurringTable() {
    ============================================ */
 
 function render() {
-  const period  = document.getElementById('periodFilter').value;
-  const type    = document.getElementById('typeFilter').value;
-  const search  = document.getElementById('searchInput').value.trim().toLowerCase();
-  const range   = getPeriodRange(period);
-  const cutoff  = range ? range.end : new Date(new Date().getFullYear() + 2, 11, 31);
+  const period   = document.getElementById('periodFilter').value;
+  const type     = document.getElementById('typeFilter').value;
+  const category = document.getElementById('categoryFilter').value;
+  const search   = document.getElementById('searchInput').value.trim().toLowerCase();
+  const range    = getPeriodRange(period);
+  const cutoff   = range ? range.end : new Date(new Date().getFullYear() + 2, 11, 31);
 
   const expanded  = expandRecurring(transactions, cutoff);
   const periodTxs = filterByPeriod(expanded, period);
@@ -748,8 +749,9 @@ function render() {
   const hideRecurring = document.getElementById('toggleRecurring').classList.contains('active');
 
   let tableTxs = periodTxs;
-  if (hideRecurring)  tableTxs = tableTxs.filter(tx => !tx._sourceId);
-  if (type !== 'all') tableTxs = tableTxs.filter(tx => tx.type === type);
+  if (hideRecurring)        tableTxs = tableTxs.filter(tx => !tx._sourceId);
+  if (type !== 'all')       tableTxs = tableTxs.filter(tx => tx.type === type);
+  if (category !== 'all')   tableTxs = tableTxs.filter(tx => tx.category === category);
   if (search) tableTxs = tableTxs.filter(tx =>
     tx.description.toLowerCase().includes(search) ||
     tx.category.toLowerCase().includes(search) ||
@@ -1179,7 +1181,7 @@ document.getElementById('txCard').addEventListener('change', () => {
 });
 
 // Filters
-['periodFilter', 'typeFilter', 'searchInput'].forEach(id => {
+['periodFilter', 'typeFilter', 'categoryFilter', 'searchInput'].forEach(id => {
   document.getElementById(id).addEventListener('input', render);
 });
 
