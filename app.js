@@ -10,12 +10,12 @@ const CATEGORIES = {
 };
 
 const CREDIT_CARDS = [
-  { name: 'Discover',  day: 1  },
-  { name: 'Amazon',    day: 5  },
-  { name: 'Amex',      day: 9  },
-  { name: 'Citi',      day: 15 },
-  { name: 'Chase',     day: 18 },
-  { name: 'Robinhood', day: 28 },
+  { name: 'Discover',  day: 1,  closing: '4th'  },
+  { name: 'Amazon',    day: 5,  closing: '8th'  },
+  { name: 'Amex',      day: 9,  closing: '15th' },
+  { name: 'Citi',      day: 15, closing: '19th' },
+  { name: 'Chase',     day: 18, closing: '21st' },
+  { name: 'Robinhood', day: 28, closing: '5th'  },
 ];
 
 const CATEGORY_COLORS = [
@@ -487,6 +487,7 @@ function updateCreditCardsSection() {
         <div class="cc-card-info">
           <span class="cc-card-name">${escHtml(card.name)}</span>
           <span class="cc-card-due">Due ${dueLabel}</span>
+          ${card.closing ? `<span class="cc-card-closing">Closes ${card.closing}</span>` : ''}
         </div>
         <button class="cc-card-toggle btn btn-ghost${enabled ? ' active' : ''}"
                 data-card="${escHtml(card.name)}"
