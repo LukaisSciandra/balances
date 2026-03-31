@@ -139,15 +139,38 @@ function nextDueDate(day) {
   return `${y}-${mo}-${da}`;
 }
 
+function isWeekday(d) {
+  const dow = d.getDay();
+  return dow !== 0 && dow !== 6;
+}
+
+// Returns the mid-month occurrence day: 15th if weekday, else 14th, else 13th.
+function midMonthWeekday(y, m) {
+  for (let day = 15; day >= 13; day--) {
+    if (isWeekday(new Date(y, m, day))) return day;
+  }
+  return 13;
+}
+
+// Returns the last weekday of the month.
+function lastWeekdayOfMonth(y, m) {
+  const last = new Date(y, m + 1, 0).getDate();
+  for (let day = last; day >= last - 2; day--) {
+    if (isWeekday(new Date(y, m, day))) return day;
+  }
+  return last - 2;
+}
+
 function nextDate(d, freq) {
   const n = new Date(d);
   if (freq === 'weekly')    n.setDate(n.getDate() + 7);
   if (freq === 'bimonthly') {
     const y = n.getFullYear(), m = n.getMonth(), day = n.getDate();
-    const lastDay = new Date(y, m + 1, 0).getDate();
-    if (day < 15)        return new Date(y, m,     15);
-    if (day < lastDay)   return new Date(y, m,     lastDay);
-    /* last day → */     return new Date(y, m + 1, 15);
+    const mid = midMonthWeekday(y, m);
+    const end = lastWeekdayOfMonth(y, m);
+    if (day < mid) return new Date(y, m,     mid);
+    if (day < end) return new Date(y, m,     end);
+    /* end → */    return new Date(y, m + 1, midMonthWeekday(y, m + 1));
   }
   if (freq === 'monthly')   n.setMonth(n.getMonth() + 1);
   if (freq === 'yearly')    n.setFullYear(n.getFullYear() + 1);
