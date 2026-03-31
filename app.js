@@ -327,7 +327,7 @@ function updateCashFlowTable(expanded) {
   // computedCurrentBalance = stored opening balance + all past transaction nets.
   const pastByDate = new Map();
   for (const tx of sorted) {
-    if (tx.date >= todayStr) continue;
+    if (tx.date > todayStr) continue;
     if (!pastByDate.has(tx.date)) pastByDate.set(tx.date, { inflow: 0, outflow: 0, investOutflow: 0 });
     const e = pastByDate.get(tx.date);
     const net = tx.amount - (tx.brokerageAmount || 0);
@@ -358,7 +358,7 @@ function updateCashFlowTable(expanded) {
   // Future dates: project forward from computedCurrentBalance.
   bal = computedCurrentBalance;
   for (const tx of sorted) {
-    if (tx.date < todayStr) continue;
+    if (tx.date <= todayStr) continue;
     const net = tx.amount - (tx.brokerageAmount || 0);
     if (tx.type === 'income') bal += net;
     else                      bal -= net;
