@@ -218,7 +218,7 @@ function getPeriodRange(period) {
   }
   if (period === 'twoMonth') {
     return {
-      start: now,
+      start: new Date(y, m, now.getDate()),
       end:   new Date(y, m + 2, now.getDate() - 1),
     };
   }
