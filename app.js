@@ -394,7 +394,12 @@ function updateCashFlowTable(expanded) {
   const rangeEndDay   = range ? new Date(range.end.getFullYear(),   range.end.getMonth(),   range.end.getDate())   : null;
   const todayInRange  = !range || (todayDate >= rangeStartDay && todayDate <= rangeEndDay);
   if (todayInRange) {
-    rows.push({ date: todayStr, inflow: 0, outflow: 0, balance: computedCurrentBalance, isCurrent: true });
+    const todayRow = rows.find(r => r.date === todayStr && !r.isPlaceholder);
+    if (todayRow) {
+      todayRow.isCurrent = true;
+    } else {
+      rows.push({ date: todayStr, inflow: 0, outflow: 0, balance: computedCurrentBalance, isCurrent: true });
+    }
   }
 
   if (!rows.length) {
@@ -416,7 +421,7 @@ function updateCashFlowTable(expanded) {
   _cashFlowRows = rows;
 
   tbody.innerHTML = rows.map(r => {
-    if (r.isCurrent) {
+    if (r.isCurrent && !r.inflow && !r.outflow) {
       return `
         <tr class="current-row">
           <td class="tx-date current-row-label">Current</td>
@@ -435,7 +440,7 @@ function updateCashFlowTable(expanded) {
         </tr>`;
     }
     return `
-      <tr>
+      <tr${r.isCurrent ? ' class="current-row"' : ''}>
         <td class="tx-date">${fmtDate(r.date)}</td>
         <td class="text-right tx-amount income">${r.inflow  ? '+' + fmt(r.inflow)  : '<span style="color:var(--text-muted)">—</span>'}</td>
         <td class="text-right tx-amount ${r.outflow && r.outflow === r.investOutflow ? 'income' : 'expense'}">${r.outflow ? '-' + fmt(r.outflow) : '<span style="color:var(--text-muted)">—</span>'}</td>
