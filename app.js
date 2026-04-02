@@ -114,6 +114,12 @@ function fmt(amount) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 }
 
+function fmtK(v) {
+  const abs = Math.abs(v), sign = v < 0 ? '-' : '';
+  if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  return `${sign}$${Math.round(abs)}`;
+}
+
 function fmtDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -637,6 +643,19 @@ function updateMonthlyInvestmentChart() {
   const posFlex = maxPos || (maxNeg ? 0 : 1);
   const negFlex = maxNeg || (maxPos ? 0 : 1);
 
+  const yAxis = `
+    <div class="inv-y-axis">
+      <div class="inv-y-pos">
+        ${maxPos > 0 ? `<span class="inv-y-tick">${fmtK(maxPos)}</span>` : ''}
+        <span class="inv-y-tick inv-y-zero-tick">$0</span>
+      </div>
+      <div class="inv-y-sep"></div>
+      <div class="inv-y-neg">
+        ${maxNeg > 0 ? `<span class="inv-y-tick">${fmtK(-maxNeg)}</span>` : ''}
+      </div>
+      <div class="inv-y-foot"></div>
+    </div>`;
+
   const cols = months.map(ym => {
     const val   = byMonth[ym];
     const [y, mo] = ym.split('-');
@@ -646,17 +665,21 @@ function updateMonthlyInvestmentChart() {
     const negH  = val < 0 && maxNeg ? Math.round(-val / maxNeg * 100) : 0;
     const color = val >= 0 ? 'var(--income)' : 'var(--expense)';
     const isCurr = ym === currentYM;
-    const prefix = val >= 0 ? '+' : '';
     return `
-      <div class="inv-bar-col" title="${prefix}${fmt(val)}">
+      <div class="inv-bar-col">
         <div class="inv-pos-area"><div class="inv-bar-fill" style="height:${posH}%;background:${color}"></div></div>
         <div class="inv-zero"></div>
         <div class="inv-neg-area"><div class="inv-bar-fill" style="height:${negH}%;background:${color}"></div></div>
         <div class="inv-bar-label${isCurr ? ' current' : ''}">${label}</div>
+        <div class="inv-bar-value" style="color:${color}">${fmtK(val)}</div>
       </div>`;
   }).join('');
 
-  container.innerHTML = `<div class="inv-bars-row" style="--pos-flex:${posFlex};--neg-flex:${negFlex}">${cols}</div>`;
+  container.innerHTML = `
+    <div class="inv-chart-wrap" style="--pos-flex:${posFlex};--neg-flex:${negFlex}">
+      ${yAxis}
+      <div class="inv-bars-row">${cols}</div>
+    </div>`;
 }
 
 /* ============================================

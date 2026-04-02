@@ -921,12 +921,59 @@ body {
 /* ============================================
    Monthly Investment Chart
    ============================================ */
+.inv-chart-wrap {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+.inv-y-axis {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 40px;
+  align-items: flex-end;
+}
+.inv-y-pos {
+  flex-grow: var(--pos-flex);
+  flex-basis: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 1px;
+}
+.inv-y-sep {
+  height: 2px;
+  flex-shrink: 0;
+}
+.inv-y-neg {
+  flex-grow: var(--neg-flex);
+  flex-basis: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-top: 1px;
+}
+.inv-y-foot {
+  height: 40px;
+  flex-shrink: 0;
+}
+.inv-y-tick {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  line-height: 1;
+}
+.inv-y-zero-tick {
+  color: var(--text-muted);
+}
 .inv-bars-row {
   display: flex;
-  height: 180px;
+  height: 200px;
   gap: 6px;
   align-items: stretch;
-  overflow-x: auto;
+  flex: 1;
 }
 .inv-bar-col {
   flex: 1;
@@ -976,6 +1023,15 @@ body {
 .inv-bar-label.current {
   color: var(--text);
   font-weight: 500;
+}
+.inv-bar-value {
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 /* ============================================
