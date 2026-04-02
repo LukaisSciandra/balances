@@ -606,6 +606,60 @@ function updateCCBillsChart() {
 }
 
 /* ============================================
+   Monthly Investment Chart
+   ============================================ */
+
+function updateMonthlyInvestmentChart() {
+  const container = document.getElementById('monthlyInvestmentChart');
+  const now = new Date();
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  const cutoff  = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const expanded = expandRecurring(transactions, cutoff);
+
+  const byMonth = {};
+  for (const tx of expanded) {
+    if (tx.category !== 'Investment') continue;
+    const ym = tx.date.slice(0, 7);
+    if (!byMonth[ym]) byMonth[ym] = 0;
+    byMonth[ym] += tx.type === 'expense' ? tx.amount : -tx.amount;
+  }
+
+  const months = Object.keys(byMonth).sort();
+  if (!months.length) {
+    container.innerHTML = '<p class="empty-msg">No investment transactions yet.</p>';
+    return;
+  }
+
+  const values  = months.map(m => byMonth[m]);
+  const maxPos  = Math.max(0, ...values);
+  const maxNeg  = Math.max(0, ...values.map(v => -v));
+  const posFlex = maxPos || (maxNeg ? 0 : 1);
+  const negFlex = maxNeg || (maxPos ? 0 : 1);
+
+  const cols = months.map(ym => {
+    const val   = byMonth[ym];
+    const [y, mo] = ym.split('-');
+    const label = new Date(parseInt(y), parseInt(mo) - 1, 1)
+      .toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    const posH  = val > 0 && maxPos ? Math.round(val / maxPos * 100) : 0;
+    const negH  = val < 0 && maxNeg ? Math.round(-val / maxNeg * 100) : 0;
+    const color = val >= 0 ? 'var(--income)' : 'var(--expense)';
+    const isCurr = ym === currentYM;
+    const prefix = val >= 0 ? '+' : '';
+    return `
+      <div class="inv-bar-col" title="${prefix}${fmt(val)}">
+        <div class="inv-pos-area"><div class="inv-bar-fill" style="height:${posH}%;background:${color}"></div></div>
+        <div class="inv-zero"></div>
+        <div class="inv-neg-area"><div class="inv-bar-fill" style="height:${negH}%;background:${color}"></div></div>
+        <div class="inv-bar-label${isCurr ? ' current' : ''}">${label}</div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `<div class="inv-bars-row" style="--pos-flex:${posFlex};--neg-flex:${negFlex}">${cols}</div>`;
+}
+
+/* ============================================
    Flows Chart
    ============================================ */
 
@@ -795,6 +849,7 @@ function render() {
   updateFlowsChart(periodTxs);
   updateCreditCardsSection();
   updateCCBillsChart();
+  updateMonthlyInvestmentChart();
 }
 
 /* ============================================
