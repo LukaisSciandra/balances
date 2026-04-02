@@ -625,10 +625,14 @@ function updateMonthlyInvestmentChart() {
 
   const byMonth = {};
   for (const tx of expanded) {
-    if (tx.category !== 'Investment') continue;
     const ym = tx.date.slice(0, 7);
-    if (!byMonth[ym]) byMonth[ym] = 0;
-    byMonth[ym] += tx.type === 'expense' ? tx.amount : -tx.amount;
+    if (tx.category === 'Investment') {
+      if (!byMonth[ym]) byMonth[ym] = 0;
+      byMonth[ym] += tx.type === 'income' ? -tx.amount : tx.amount;
+    } else if (tx.brokerageAmount) {
+      if (!byMonth[ym]) byMonth[ym] = 0;
+      byMonth[ym] -= tx.brokerageAmount;
+    }
   }
 
   const months = Object.keys(byMonth).sort();
