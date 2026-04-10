@@ -1310,6 +1310,10 @@ document.getElementById('recurringToggle').addEventListener('click', () => {
   document.getElementById('recurringSection').classList.toggle('collapsed');
 });
 
+document.getElementById('creditCardsToggle').addEventListener('click', () => {
+  document.getElementById('creditCardsSection').classList.toggle('collapsed');
+});
+
 document.getElementById('periodFilter').addEventListener('input', () => {
   document.getElementById('customDateRange').hidden =
     document.getElementById('periodFilter').value !== 'custom';

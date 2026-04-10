@@ -144,9 +144,18 @@
       </section>
 
       <!-- Credit Cards -->
-      <section class="card">
-        <h2 class="card-title">Credit Cards</h2>
-        <div id="creditCardsList" class="cc-cards-list"></div>
+      <section class="card transactions-card collapsed" id="creditCardsSection">
+        <div class="transactions-header" id="creditCardsToggle">
+          <div class="section-title-row">
+            <button class="collapse-toggle" aria-label="Expand Credit Cards">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <h2 class="card-title">Credit Cards</h2>
+          </div>
+        </div>
+        <div class="table-wrapper" style="padding:12px 0 0">
+          <div id="creditCardsList" class="cc-cards-list"></div>
+        </div>
       </section>
 
       <!-- Monthly CC Bills -->
