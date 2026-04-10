@@ -305,6 +305,9 @@ body {
 .transactions-card.collapsed .table-wrapper {
   display: none;
 }
+.transactions-card.collapsed .filters {
+  display: none;
+}
 .transactions-card.collapsed .transactions-header {
   border-bottom: none;
 }
