@@ -27,6 +27,7 @@ const CATEGORY_COLORS = [
 const STORAGE_KEY = 'cashflow_transactions';
 const BALANCE_KEY  = 'cashflow_opening_balance';
 const CARDS_KEY    = 'cashflow_disabled_cards';
+const CC_OVERRIDE_KEY = 'cashflow_cc_date_overrides';
 
 /* ============================================
    State
@@ -34,7 +35,8 @@ const CARDS_KEY    = 'cashflow_disabled_cards';
 
 let transactions        = loadTransactions();
 let currentBalance      = loadBalance();
-let disabledCards       = loadDisabledCards();  // stored opening balance
+let disabledCards       = loadDisabledCards();
+let ccDateOverrides     = loadCCDateOverrides();  // stored opening balance
 let computedCurrentBalance = currentBalance; // opening + all past tx nets; updated each render
 let editingId          = null;
 let editingSourceId    = null;   // set when editing a single recurring occurrence
@@ -82,6 +84,14 @@ function loadDisabledCards() {
 
 function saveDisabledCards() {
   localStorage.setItem(CARDS_KEY, JSON.stringify([...disabledCards]));
+}
+
+function loadCCDateOverrides() {
+  try { return JSON.parse(localStorage.getItem(CC_OVERRIDE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveCCDateOverrides() {
+  localStorage.setItem(CC_OVERRIDE_KEY, JSON.stringify(ccDateOverrides));
 }
 
 function getDefaultTransactions() {
@@ -305,14 +315,16 @@ function getCreditCardPlaceholders(range) {
       const y  = d.getFullYear();
       const mo = String(d.getMonth() + 1).padStart(2, '0');
       const da = String(d.getDate()).padStart(2, '0');
-      const dueDate = `${y}-${mo}-${da}`;
-      const isPast = d < new Date(today() + 'T00:00:00');
+      const nominalDate = `${y}-${mo}-${da}`;
+      const dueMonth    = `${y}-${mo}`;
+      const effectiveDate = ccDateOverrides[`${card.name}_${dueMonth}`] || nominalDate;
+      const isPast = new Date(effectiveDate + 'T00:00:00') < new Date(today() + 'T00:00:00');
       const paid = transactions.some(tx =>
         tx.type === 'expense' && tx.category === 'Credit' &&
-        tx.date === dueDate && (!tx.card || tx.card === card.name)
+        tx.date === effectiveDate && (!tx.card || tx.card === card.name)
       );
       if (!paid && !isPast) {
-        result.push({ date: dueDate, cardName: card.name, isPlaceholder: true });
+        result.push({ date: effectiveDate, nominalDate, dueMonth, cardName: card.name, isPlaceholder: true });
       }
       d = new Date(d.getFullYear(), d.getMonth() + 1, card.day);
     }
@@ -437,12 +449,17 @@ function updateCashFlowTable(expanded) {
         </tr>`;
     }
     if (r.isPlaceholder) {
+      const rescheduled = r.date !== r.nominalDate;
       return `
         <tr class="cc-placeholder-row">
-          <td class="tx-date">${fmtDate(r.date)}<span class="cc-placeholder-label">${escHtml(r.cardName)}</span></td>
+          <td class="tx-date">${fmtDate(r.date)}<span class="cc-placeholder-label">${escHtml(r.cardName)}${rescheduled ? ' <span title="Rescheduled from ' + fmtDate(r.nominalDate) + '">↷</span>' : ''}</span></td>
           <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
           <td class="text-right cc-placeholder-amount">pending</td>
-          <td class="text-right"><span style="color:var(--text-muted)">—</span></td>
+          <td class="text-right">
+            <button class="icon-btn" title="Reschedule payment date" onclick="openPhReschedule('${escHtml(r.cardName)}','${r.dueMonth}','${r.date}','${r.nominalDate}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </button>
+          </td>
         </tr>`;
     }
     return `
@@ -755,12 +772,17 @@ function updateTable(txs) {
 
   tbody.innerHTML = allRows.map(row => {
     if (row.isPlaceholder) {
+      const rescheduled = row.date !== row.nominalDate;
       return `
     <tr class="cc-placeholder-row">
       <td class="tx-date">${fmtDate(row.date)}</td>
-      <td><span class="tx-desc">${escHtml(row.cardName)}</span><span class="cc-placeholder-label">Credit</span></td>
+      <td><span class="tx-desc">${escHtml(row.cardName)}</span><span class="cc-placeholder-label">Credit${rescheduled ? ' ↷' : ''}</span></td>
       <td class="cc-placeholder-amount">pending</td>
-      <td></td>
+      <td class="tx-actions">
+        <button class="icon-btn" title="Reschedule payment date" onclick="openPhReschedule('${escHtml(row.cardName)}','${row.dueMonth}','${row.date}','${row.nominalDate}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </button>
+      </td>
     </tr>`;
     }
     return `
@@ -1289,6 +1311,42 @@ document.getElementById('txCard').addEventListener('change', () => {
   }
   document.getElementById('brokerageRow').hidden = cardName !== 'Robinhood';
   if (cardName !== 'Robinhood') document.getElementById('txBrokerage').value = '';
+});
+
+/* ============================================
+   Reschedule CC Placeholder
+   ============================================ */
+
+let _phCard = null, _phDueMonth = null, _phNominal = null;
+
+function openPhReschedule(cardName, dueMonth, effectiveDate, nominalDate) {
+  _phCard = cardName; _phDueMonth = dueMonth; _phNominal = nominalDate;
+  document.getElementById('phRescheduleTitle').textContent = `Reschedule ${cardName} Payment`;
+  document.getElementById('phRescheduleDefault').textContent = `Default due date: ${fmtDate(nominalDate)}`;
+  document.getElementById('phRescheduleDate').value = effectiveDate;
+  document.getElementById('phRescheduleOverlay').hidden = false;
+}
+
+document.getElementById('phRescheduleSave').addEventListener('click', () => {
+  const newDate = document.getElementById('phRescheduleDate').value;
+  if (!newDate || !_phCard) return;
+  ccDateOverrides[`${_phCard}_${_phDueMonth}`] = newDate;
+  saveCCDateOverrides();
+  document.getElementById('phRescheduleOverlay').hidden = true;
+  render();
+});
+
+document.getElementById('phRescheduleReset').addEventListener('click', () => {
+  delete ccDateOverrides[`${_phCard}_${_phDueMonth}`];
+  saveCCDateOverrides();
+  document.getElementById('phRescheduleOverlay').hidden = true;
+  render();
+});
+
+['phRescheduleClose', 'phRescheduleCancel'].forEach(id => {
+  document.getElementById(id).addEventListener('click', () => {
+    document.getElementById('phRescheduleOverlay').hidden = true;
+  });
 });
 
 // Filters

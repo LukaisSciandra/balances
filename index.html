@@ -340,6 +340,30 @@
     </div>
   </div>
 
+  <!-- Reschedule CC Placeholder Modal -->
+  <div class="modal-overlay" id="phRescheduleOverlay" hidden>
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 id="phRescheduleTitle">Reschedule Payment</h2>
+        <button class="modal-close" id="phRescheduleClose" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <p class="modal-text" id="phRescheduleDefault"></p>
+      <div class="form-group">
+        <label class="form-label">Payment Date</label>
+        <input type="date" id="phRescheduleDate" class="text-input" style="width:100%" />
+      </div>
+      <div class="form-actions" style="justify-content:space-between">
+        <button class="btn btn-ghost" id="phRescheduleReset">Reset to default</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" id="phRescheduleCancel">Cancel</button>
+          <button class="btn btn-primary" id="phRescheduleSave">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Invest Modal -->
   <div class="modal-overlay" id="investOverlay">
     <div class="modal modal-sm">
