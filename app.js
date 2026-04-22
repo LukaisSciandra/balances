@@ -801,6 +801,10 @@ function updateTable(txs) {
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
         </button>
+        ${row.type === 'expense' && row.category === 'Credit' ? `
+        <button class="icon-btn" title="Reschedule payment date" onclick="openTxReschedule('${row._sourceId || row.id}','${row.date}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </button>` : ''}
         <button class="icon-btn delete" title="Delete" onclick="openDelete('${row._sourceId || row.id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"></polyline>
@@ -1317,21 +1321,38 @@ document.getElementById('txCard').addEventListener('change', () => {
    Reschedule CC Placeholder
    ============================================ */
 
-let _phCard = null, _phDueMonth = null, _phNominal = null;
+let _phCard = null, _phDueMonth = null, _phNominal = null, _phTxId = null;
 
 function openPhReschedule(cardName, dueMonth, effectiveDate, nominalDate) {
-  _phCard = cardName; _phDueMonth = dueMonth; _phNominal = nominalDate;
+  _phCard = cardName; _phDueMonth = dueMonth; _phNominal = nominalDate; _phTxId = null;
   document.getElementById('phRescheduleTitle').textContent = `Reschedule ${cardName} Payment`;
   document.getElementById('phRescheduleDefault').textContent = `Default due date: ${fmtDate(nominalDate)}`;
+  document.getElementById('phRescheduleReset').hidden = false;
   document.getElementById('phRescheduleDate').value = effectiveDate;
+  document.getElementById('phRescheduleOverlay').hidden = false;
+}
+
+function openTxReschedule(txId, currentDate) {
+  const tx = transactions.find(t => t.id === txId);
+  if (!tx) return;
+  _phTxId = txId; _phCard = null;
+  document.getElementById('phRescheduleTitle').textContent = `Reschedule ${tx.description || 'Payment'}`;
+  document.getElementById('phRescheduleDefault').textContent = `Current date: ${fmtDate(currentDate)}`;
+  document.getElementById('phRescheduleReset').hidden = true;
+  document.getElementById('phRescheduleDate').value = currentDate;
   document.getElementById('phRescheduleOverlay').hidden = false;
 }
 
 document.getElementById('phRescheduleSave').addEventListener('click', () => {
   const newDate = document.getElementById('phRescheduleDate').value;
-  if (!newDate || !_phCard) return;
-  ccDateOverrides[`${_phCard}_${_phDueMonth}`] = newDate;
-  saveCCDateOverrides();
+  if (!newDate) return;
+  if (_phTxId) {
+    const tx = transactions.find(t => t.id === _phTxId);
+    if (tx) { tx.date = newDate; saveTransactions(); }
+  } else if (_phCard) {
+    ccDateOverrides[`${_phCard}_${_phDueMonth}`] = newDate;
+    saveCCDateOverrides();
+  }
   document.getElementById('phRescheduleOverlay').hidden = true;
   render();
 });
