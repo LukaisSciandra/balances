@@ -209,7 +209,9 @@ function expandRecurring(txs, endDate) {
     while (d <= limit) {
       const ds = dateStr(d);
       if (!excluded.has(ds)) {
-        result.push({ ...tx, date: ds, id: tx.id + '_' + ds, _sourceId: tx.id });
+        const isSecond = tx.recurring === 'bimonthly' && d.getDate() > 15;
+        const amount   = (isSecond && tx.amount2 != null) ? tx.amount2 : tx.amount;
+        result.push({ ...tx, date: ds, amount, id: tx.id + '_' + ds, _sourceId: tx.id });
       }
       d = nextDate(d, tx.recurring);
     }
@@ -850,7 +852,7 @@ function updateRecurringTable() {
         ${tx.note ? `<span class="tx-note">${escHtml(tx.note)}</span>` : ''}
       </td>
       <td><span class="badge badge-${tx.type}">${tx.type === 'income' ? 'Income' : 'Expense'}</span></td>
-      <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}</td>
+      <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}${tx.recurring === 'bimonthly' && tx.amount2 != null ? ` / ${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount2)}` : ''}</td>
       <td>${FREQ_LABELS[tx.recurring] || tx.recurring}</td>
       <td class="tx-actions">
         <button class="icon-btn" title="Edit" onclick="openEdit('${tx.id}')">${editIcon}</button>
@@ -980,9 +982,13 @@ function setType(type) {
 }
 
 function updateRecurringEndVisibility() {
-  const hasRecurring = !!document.getElementById('txRecurring').value;
-  document.getElementById('recurringEndRow').hidden = !hasRecurring;
-  if (!hasRecurring) document.getElementById('txRecurringEnd').value = '';
+  const recurring = document.getElementById('txRecurring').value;
+  const isBimonthly = recurring === 'bimonthly';
+  document.getElementById('recurringEndRow').hidden = !recurring;
+  if (!recurring) document.getElementById('txRecurringEnd').value = '';
+  document.getElementById('txAmount2Row').hidden = !isBimonthly;
+  if (!isBimonthly) document.getElementById('txAmount2').value = '';
+  document.getElementById('txAmountLabel').textContent = isBimonthly ? '1st occurrence ($)' : 'Amount ($)';
 }
 
 function updateCardPickerVisibility() {
@@ -1061,6 +1067,7 @@ window.openEdit = function(id, specificDate) {
     document.getElementById('txNote').value         = tx.note || '';
     document.getElementById('txRecurring').value    = tx.recurring || '';
     document.getElementById('txRecurringEnd').value = tx.recurringEnd || '';
+    document.getElementById('txAmount2').value      = tx.amount2 != null ? tx.amount2 : '';
     document.getElementById('txBrokerage').value    = tx.brokerageAmount || '';
     document.getElementById('brokerageRow').hidden  = tx.card !== 'Robinhood';
     updateRecurringEndVisibility();
@@ -1074,6 +1081,7 @@ window.openEdit = function(id, specificDate) {
     document.getElementById('txNote').value         = tx.note || '';
     document.getElementById('txRecurring').value    = tx.recurring || '';
     document.getElementById('txRecurringEnd').value = tx.recurringEnd || '';
+    document.getElementById('txAmount2').value      = tx.amount2 != null ? tx.amount2 : '';
     updateRecurringEndVisibility();
     const catSel = document.getElementById('txCategory');
     const opt = [...catSel.options].find(o => o.value === tx.category);
@@ -1197,11 +1205,14 @@ document.getElementById('txForm').addEventListener('submit', e => {
   const card         = document.getElementById('txCard').value || null;
   const brokerageRaw = parseFloat(document.getElementById('txBrokerage').value);
   const brokerageAmount = (card === 'Robinhood' && brokerageRaw > 0) ? brokerageRaw : null;
+  const amount2Raw   = parseFloat(document.getElementById('txAmount2').value);
+  const amount2      = (recurring === 'bimonthly' && !isNaN(amount2Raw) && amount2Raw >= 0) ? amount2Raw : null;
   const tx = {
     id:           editingId || uid(),
     type:         document.getElementById('txType').value,
     description:  document.getElementById('txDescription').value.trim(),
     amount:       parseFloat(document.getElementById('txAmount').value),
+    amount2,
     category:     document.getElementById('txCategory').value,
     date:         document.getElementById('txDate').value,
     note:         document.getElementById('txNote').value.trim(),
